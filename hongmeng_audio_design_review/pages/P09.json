@@ -1,0 +1,192 @@
+{
+  "n": 9,
+  "title": "无锁消息队列：发布、摘批与逆序执行",
+  "takeaway": "常规链表头用 CAS；消费者摘批后反向遍历执行",
+  "objective": "常规链表头用 CAS；消费者摘批后反向遍历执行",
+  "script": "管理请求例如Start会由SendRequest包装成lambda。生产者先从空闲节点链中原子摘取节点，填入request，然后通过CAS把节点压到请求头。多个线程竞争时，CAS成功次序定义入链先后；链表按头插法反转了它。消费者HandleRequests用CAS一次摘走当前整批，ProcessRequests沿链放进临时数组，再反向遍历执行，恢复批内发布次序。执行的每个lambda本身并非原子操作，也不承诺跨批次或外部业务请求的全局语义顺序。\n这就是无锁消息队列值得讲的算法细节：常规取节点、发布、摘批依赖原子操作，让控制请求进入处理侧不必围绕同一业务锁串行。但慢路径TryExpandQueue持expandMutex且分配新节点，处理线程的Notify也有锁；达到最大容量仍无空节点时会上报并丢弃请求。这里不说全链无锁、零分配。",
+  "elements": [
+    [
+      "text",
+      65,
+      255,
+      450,
+      40,
+      "生产者：SendRequest",
+      27,
+      "blue",
+      true,
+      "left"
+    ],
+    [
+      "text",
+      650,
+      255,
+      540,
+      40,
+      "消费者：HandleRequests",
+      27,
+      "teal",
+      true,
+      "left"
+    ],
+    [
+      "line",
+      625,
+      255,
+      625,
+      595,
+      "light",
+      2
+    ],
+    [
+      "node",
+      65,
+      324,
+      535,
+      58,
+      "free node 原子摘取",
+      "blue",
+      22
+    ],
+    [
+      "arrow",
+      332,
+      382,
+      332,
+      401,
+      "blue",
+      false
+    ],
+    [
+      "node",
+      65,
+      401,
+      535,
+      58,
+      "填入 request lambda",
+      "blue",
+      22
+    ],
+    [
+      "arrow",
+      332,
+      459,
+      332,
+      478,
+      "blue",
+      false
+    ],
+    [
+      "node",
+      65,
+      478,
+      535,
+      58,
+      "CAS 发布到 requestHead",
+      "blue",
+      22
+    ],
+    [
+      "node",
+      650,
+      324,
+      535,
+      58,
+      "CAS 摘取整批请求",
+      "teal",
+      22
+    ],
+    [
+      "arrow",
+      917,
+      382,
+      917,
+      401,
+      "teal",
+      false
+    ],
+    [
+      "node",
+      650,
+      401,
+      535,
+      58,
+      "沿链读入临时数组",
+      "teal",
+      22
+    ],
+    [
+      "arrow",
+      917,
+      459,
+      917,
+      478,
+      "teal",
+      false
+    ],
+    [
+      "node",
+      650,
+      478,
+      535,
+      58,
+      "反向遍历并逐项执行",
+      "teal",
+      22
+    ],
+    [
+      "text",
+      65,
+      573,
+      535,
+      35,
+      "请求发布次序由CAS确定",
+      22,
+      "navy",
+      false,
+      "left"
+    ],
+    [
+      "text",
+      650,
+      573,
+      540,
+      35,
+      "摘批是原子；任务执行不是原子",
+      22,
+      "navy",
+      false,
+      "left"
+    ],
+    [
+      "text",
+      64,
+      621,
+      1140,
+      34,
+      "队列耗尽会扩容；扩容使用 mutex 与分配，达到上限仍无空节点会报告并丢弃请求",
+      20,
+      "amber",
+      true,
+      "left"
+    ]
+  ],
+  "minutes": 4,
+  "section": "源码设计 · 主讲",
+  "next": "继续沿实际调用展开。",
+  "footer": "CAS决定节点入链，批内逆序遍历恢复发布次序；慢路径有锁与分配",
+  "boundary": "不保证所有请求必达或所有操作无锁。",
+  "cue": "",
+  "pacing": "先按图走一次调用，再解释条件与设计理由。",
+  "sources": [
+    "SendRequest L1755–1770：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1755",
+    "PushRequest / HandleRequests / TryExpandQueue L57–145：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L57",
+    "PushRequestNode 原子发布 L172–191：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L172",
+    "ProcessRequests 批量执行 L227–262：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L227",
+    "队列容量与扩容阈值 L28–38：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.h#L28"
+  ],
+  "dark": false,
+  "from": "线程与Buffer精简已经解释完毕。",
+  "titleSize": 40,
+  "revision": "technical-design-v2"
+}
