@@ -1,0 +1,205 @@
+{
+  "n": 12,
+  "title": "Pause / Stop：淡出完成后再断开节点",
+  "takeaway": "中间态把 Gain 渐变、音效暂停和断图衔接起来",
+  "objective": "中间态把 Gain 渐变、音效暂停和断图衔接起来",
+  "script": "这里画的是设备RendererManager内部HPAE_SESSION状态，而不是客户端API状态。普通活跃流Pause会SetSessionFade进入PAUSING；Stop进入STOPPING。Gain节点输出淡出后调用OnFadeDone，OnFadeDone再次把工作送回设备队列，在该上下文暂停会话音效、DisConnectInputSession、置PAUSED或STOPPED，再触发状态回调。先过渡再拆图，把声音渐变与资源连接协调起来。\n有两个重要条件。若节点已经PAUSED/STOPPED、无Gain、Manager未运行或standby等，会走直接终态回调路径。若淡出完成消息回来时节点已恢复RUNNING，OnFadeDone退出，避免迟到的回调把新播放的连接拆掉。管理层还有pending transition和超时兜底，不能把管理回调当成设备完成屏障。旧PA同样有淡出，这里展示自研通过节点状态、Gain回调和设备队列组织职责，不宣称首次发明渐变。",
+  "elements": [
+    [
+      "text",
+      64,
+      247,
+      1140,
+      38,
+      "HpaeRendererManager 的内部状态（HPAE_SESSION_ 前缀省略）",
+      24,
+      "navy",
+      true,
+      "left"
+    ],
+    [
+      "node",
+      64,
+      325,
+      210,
+      60,
+      "RUNNING",
+      "navy",
+      23
+    ],
+    [
+      "node",
+      475,
+      325,
+      230,
+      60,
+      "PAUSING",
+      "amber",
+      23
+    ],
+    [
+      "node",
+      1025,
+      325,
+      190,
+      60,
+      "PAUSED",
+      "teal",
+      23
+    ],
+    [
+      "arrow",
+      274,
+      355,
+      475,
+      355,
+      "blue",
+      false
+    ],
+    [
+      "text",
+      305,
+      316,
+      150,
+      35,
+      "Pause",
+      23,
+      "blue",
+      false,
+      "left"
+    ],
+    [
+      "arrow",
+      705,
+      355,
+      1025,
+      355,
+      "teal",
+      false
+    ],
+    [
+      "text",
+      730,
+      315,
+      290,
+      35,
+      "OnFadeDone → 再入队",
+      20,
+      "teal",
+      false,
+      "left"
+    ],
+    [
+      "node",
+      64,
+      460,
+      210,
+      60,
+      "RUNNING",
+      "navy",
+      23
+    ],
+    [
+      "node",
+      475,
+      460,
+      230,
+      60,
+      "STOPPING",
+      "amber",
+      23
+    ],
+    [
+      "node",
+      1025,
+      460,
+      190,
+      60,
+      "STOPPED",
+      "teal",
+      23
+    ],
+    [
+      "arrow",
+      274,
+      490,
+      475,
+      490,
+      "blue",
+      false
+    ],
+    [
+      "text",
+      305,
+      451,
+      150,
+      35,
+      "Stop",
+      23,
+      "blue",
+      false,
+      "left"
+    ],
+    [
+      "arrow",
+      705,
+      490,
+      1025,
+      490,
+      "teal",
+      false
+    ],
+    [
+      "text",
+      730,
+      450,
+      290,
+      35,
+      "OnFadeDone → 再入队",
+      20,
+      "teal",
+      false,
+      "left"
+    ],
+    [
+      "text",
+      64,
+      573,
+      535,
+      63,
+      "无 Gain / standby 等条件\n可直接设置终态与回调",
+      23,
+      "gray",
+      false,
+      "left"
+    ],
+    [
+      "text",
+      650,
+      573,
+      565,
+      63,
+      "过时淡出回调发现已 RUNNING\n立即退出，避免拆掉恢复后的连接",
+      23,
+      "blue",
+      false,
+      "left"
+    ]
+  ],
+  "minutes": 4,
+  "section": "源码设计 · 主讲",
+  "next": "继续沿实际调用展开。",
+  "footer": "普通活跃流正常路径；实际条件旁路在下方；状态属于设备RendererManager",
+  "boundary": "管理状态回程/超时与真实设备完成分开；旧PA也有淡出。",
+  "cue": "",
+  "pacing": "先按图走一次调用，再解释条件与设计理由。",
+  "sources": [
+    "SetSessionFade L1861–1904：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1861",
+    "OnFadeDone L1777–1804：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1777",
+    "Pause L1110–1141：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1110"
+  ],
+  "dark": false,
+  "from": "已经讲完线程/Buffer、消息队列与节点复用。",
+  "titleSize": 40,
+  "revision": "technical-design-v2"
+}

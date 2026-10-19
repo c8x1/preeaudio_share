@@ -1,0 +1,45 @@
+SetSessionFade L1861–1904：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1861
+1861: }
+1862: 
+1863: std::string HpaeRendererManager::GetThreadName()
+1864: {
+1865:     return sinkInfo_.deviceName;
+1866: }
+1867: 
+1868: bool HpaeRendererManager::SetSessionFade(uint32_t sessionId, IOperation operation, bool isStandby)
+1869: {
+1870:     CHECK_AND_RETURN_RET_LOG(SafeGetMap(sinkInputNodeMap_, sessionId), false,
+1871:         "can not get input node of session %{public}u", sessionId);
+1872:     HpaeProcessorType sceneType = GetConnectedProcessorType(sessionId);
+1873:     AUDIO_INFO_LOG("sessionId is %{public}d, sceneType is %{public}d", sessionId, sceneType);
+1874:     std::shared_ptr<HpaeGainNode> sessionGainNode = nullptr;
+1875:     if (SafeGetMap(sceneClusterMap_, sceneType)) {
+1876:         sessionGainNode = sceneClusterMap_[sceneType]->GetGainNodeById(sessionId);
+1877:     }
+1878:     if (sinkInputNodeMap_[sessionId]->GetState() == HPAE_SESSION_STOPPED ||
+1879:         sinkInputNodeMap_[sessionId]->GetState() == HPAE_SESSION_PAUSED ||
+1880:         sessionGainNode == nullptr || !IsRunning() || isStandby) {
+1881:         AUDIO_WARNING_LOG("session %{public}d do not have gain node or sink is not running!", sessionId);
+1882:         if (operation != OPERATION_STARTED) {
+1883:             HpaeSessionState state = operation == OPERATION_STOPPED ? HPAE_SESSION_STOPPED : HPAE_SESSION_PAUSED;
+1884:             SetSessionState(sessionId, state);
+1885:             sinkInputNodeMap_[sessionId]->SetState(state);
+1886:             TriggerCallback(UPDATE_STATUS, HPAE_STREAM_CLASS_TYPE_PLAY, sessionId, state, operation);
+1887:         }
+1888:         return false;
+1889:     }
+1890:     AUDIO_INFO_LOG("get gain node of session %{public}d operation %{public}d.", sessionId, operation);
+1891:     if (sinkInputNodeMap_[sessionId]->GetState() != HPAE_SESSION_STOPPING &&
+1892:         sinkInputNodeMap_[sessionId]->GetState() != HPAE_SESSION_PAUSING) {
+1893:         sessionGainNode->SetFadeState(operation);
+1894:     }
+1895:     if (operation != OPERATION_STARTED) {
+1896:         HpaeSessionState state = operation == OPERATION_STOPPED ? HPAE_SESSION_STOPPING : HPAE_SESSION_PAUSING;
+1897:         SetSessionState(sessionId, state);
+1898:         sinkInputNodeMap_[sessionId]->SetState(state);
+1899:     }
+1900: 
+1901:     return true;
+1902: }
+1903: 
+1904: int32_t HpaeRendererManager::DumpSinkInfo()

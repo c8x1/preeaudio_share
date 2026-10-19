@@ -1,0 +1,29 @@
+OnFadeDone L1777–1804：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1777
+1777: void HpaeRendererManager::OnFadeDone(uint32_t sessionId)
+1778: {
+1779:     auto request = [this, sessionId]() {
+1780:         Trace trace("[" + std::to_string(sessionId) + "]HpaeRendererManager::OnFadeDone");
+1781:         CHECK_AND_RETURN_LOG(SafeGetMap(sinkInputNodeMap_, sessionId), "not find sessionId %{public}u", sessionId);
+1782:         CHECK_AND_RETURN_LOG(sinkInputNodeMap_[sessionId]->GetState() != HPAE_SESSION_RUNNING,
+1783:             "no need disconnect renderer input session, %{public}u is running", sessionId);
+1784:         // Fade completed while an SE close was still waiting on its crossfade callback: finalize
+1785:         // before SessionEffectPause stops the node (SignalProcess would never run again).
+1786:         FinalizePendingSessionEffectClose(sessionId);
+1787:         AUDIO_INFO_LOG("Fade done, call back at RendererManager");
+1788:         IOperation operation = sinkInputNodeMap_[sessionId]->GetState() == HPAE_SESSION_STOPPING ?
+1789:             OPERATION_STOPPED : OPERATION_PAUSED;
+1790:         if ((operation == OPERATION_PAUSED || operation == OPERATION_STOPPED) && HasSessionEffect(sessionId)) {
+1791:             HpaeProcessorType sceneType = GetConnectedProcessorType(sessionId);
+1792:             if (SafeGetMap(sceneClusterMap_, sceneType)) {
+1793:                 sceneClusterMap_[sceneType]->SessionEffectPause(sessionId);
+1794:             }
+1795:         }
+1796:         DisConnectInputSession(sessionId);
+1797:         HpaeSessionState state = operation == OPERATION_STOPPED ? HPAE_SESSION_STOPPED : HPAE_SESSION_PAUSED;
+1798:         SetSessionState(sessionId, state);
+1799:         sinkInputNodeMap_[sessionId]->SetState(state);
+1800:         TriggerCallback(UPDATE_STATUS, HPAE_STREAM_CLASS_TYPE_PLAY, sessionId, state, operation);
+1801:     };
+1802:     SendRequest(request, __func__);
+1803: }
+1804: 
