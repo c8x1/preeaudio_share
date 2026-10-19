@@ -1,0 +1,7 @@
+from redesign import *
+e=[t(65,261,520,38,'原连接',27,'gray',True),box(64,317,255,62,'Converter','blue'),a(319,348,438,348),box(438,317,320,62,'LoudnessGain','blue'),t(65,416,1130,38,'局部插入的真正步骤',27,'blue',True)]
+for i,(s,c) in enumerate([('查已有绑定 / 两端节点','navy'),('创建并初始化音效','blue'),('成功后断开旧边','amber'),('接两条新边 / 登记映射','teal')]):
+ x=64+i*288;e += [box(x,485,260,65,s,c,19)]
+ if i<3:e += [a(x+260,517,x+288,517)]
+e += [t(65,587,1140,40,'失败返回发生在断开旧连接之前：既有 Converter → LoudnessGain 保留',22,'navy',True)]
+save(11,'接入会话音效：成功创建后才重连','先验证与初始化，再修改 Converter 到 LoudnessGain 的局部连接',e,'拿接入会话音效这个真实功能看节点化价值。ProcessCluster::CreateSessionEffectNode先检查该session没有已绑定音效，再查Converter与LoudnessGain两端存在。创建HpaeSessionEffectNode后调用CreateEffectWithInstance。只有创建成功才断开原Converter到LoudnessGain的连接，将SessionEffectNode接在两者之间，并更新idSessionEffectMap。\n这个顺序的工程价值是失败时不用恢复一条已被破坏的通路：找不到节点、重复绑定或初始化失败都在DisConnect前返回。这里说的是这段函数的局部图修改，不保证其外部生命周期和并发操作也具备事务原子性。当前AISS接入分支还有48kHz双声道格式约束，不能说任意音效/格式都可即插即用。设备输出、通用Gain和sceneMixer继续复用，需求变更集中在会话链局部。',['sessionfx','fxformat','connect'],'图示真实断边前检查；当前AISS格式有适用条件','局部函数失败保持旧边；不夸大为整图事务。')
