@@ -1,0 +1,5 @@
+from redesign import *
+e=lanes(['策略 / 路由','HpaeManager','旧 Renderer','SinkInput 对象','目标 Renderer'],[160,405,650,900,1120],245,600)
+e+=msg(160,405,320,'选择目标后发起 Move','purple',19)+msg(405,650,375,'MoveStream 请求','blue',20)+msg(650,900,430,'保留对象 / 拆旧连接','amber',19)+msg(900,405,485,'MOVE_SINK_INPUT 回调','blue',19)+msg(405,1120,538,'AddNodeToSink → 目标队列','blue',20)
+e += [t(690,576,525,39,'更新设备 / span；RUNNING 才连接',21,'teal'),t(64,622,1140,35,'对象身份保留，设备信息与处理连接重建；管理成功仍不代表声学切换完成',21,'navy',True)]
+save(13,'切换设备：迁移输入对象，重建目标连接','路由选择落实为跨 Manager 的拆连、接入与状态衔接',e,'全局策略先按usage、client等选择目标设备。图把策略和服务到引擎的中间层折叠，从HpaeManager的已有目标sink迁移路径展开。HpaeManager找到旧RendererManager后请求MoveStream；MoveStreamSync保留shared_ptr指向的SinkInput对象，在需要时让会话音效准备迁移，触发当前状态，删除旧会话连接但保留音效attach状态，再以MOVE_SINK_INPUT回调交回Manager。\nManager把对象交给目标RendererManager::AddNodeToSink，这又是一次请求入队。AddSingleNodeToSink会更新deviceClass、deviceName、网络与地址、状态回调、sceneType及帧长，发UPDATE_SPAN_SIZE，创建目标过程簇；仅在isConnect且内部状态RUNNING时连接输入。Manager还更新会话到sink的映射。保留输入对象不等于保留所有处理节点；目标处理图要按目标设备条件建立。图不声称所有设备类型通用，也不把迁移回调当作声学无缝完成。',['route','move','detach','movein','attach','span'],'展开已有目标sink的可迁移播放会话；上游策略调用折叠','MOVE成功是管理语义；声学连续性需实机测量。')

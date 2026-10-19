@@ -1,0 +1,262 @@
+{
+  "n": 13,
+  "title": "切换设备：迁移输入对象，重建目标连接",
+  "takeaway": "路由选择落实为跨 Manager 的拆连、接入与状态衔接",
+  "objective": "路由选择落实为跨 Manager 的拆连、接入与状态衔接",
+  "script": "全局策略先按usage、client等选择目标设备。图把策略和服务到引擎的中间层折叠，从HpaeManager的已有目标sink迁移路径展开。HpaeManager找到旧RendererManager后请求MoveStream；MoveStreamSync保留shared_ptr指向的SinkInput对象，在需要时让会话音效准备迁移，触发当前状态，删除旧会话连接但保留音效attach状态，再以MOVE_SINK_INPUT回调交回Manager。\nManager把对象交给目标RendererManager::AddNodeToSink，这又是一次请求入队。AddSingleNodeToSink会更新deviceClass、deviceName、网络与地址、状态回调、sceneType及帧长，发UPDATE_SPAN_SIZE，创建目标过程簇；仅在isConnect且内部状态RUNNING时连接输入。Manager还更新会话到sink的映射。保留输入对象不等于保留所有处理节点；目标处理图要按目标设备条件建立。图不声称所有设备类型通用，也不把迁移回调当作声学无缝完成。",
+  "elements": [
+    [
+      "text",
+      45,
+      245,
+      230,
+      48,
+      "策略 / 路由",
+      23,
+      "navy",
+      true,
+      "center"
+    ],
+    [
+      "line",
+      160,
+      300,
+      160,
+      600,
+      "light",
+      2
+    ],
+    [
+      "text",
+      290,
+      245,
+      230,
+      48,
+      "HpaeManager",
+      23,
+      "navy",
+      true,
+      "center"
+    ],
+    [
+      "line",
+      405,
+      300,
+      405,
+      600,
+      "light",
+      2
+    ],
+    [
+      "text",
+      535,
+      245,
+      230,
+      48,
+      "旧 Renderer",
+      23,
+      "navy",
+      true,
+      "center"
+    ],
+    [
+      "line",
+      650,
+      300,
+      650,
+      600,
+      "light",
+      2
+    ],
+    [
+      "text",
+      785,
+      245,
+      230,
+      48,
+      "SinkInput 对象",
+      23,
+      "navy",
+      true,
+      "center"
+    ],
+    [
+      "line",
+      900,
+      300,
+      900,
+      600,
+      "light",
+      2
+    ],
+    [
+      "text",
+      1005,
+      245,
+      230,
+      48,
+      "目标 Renderer",
+      23,
+      "navy",
+      true,
+      "center"
+    ],
+    [
+      "line",
+      1120,
+      300,
+      1120,
+      600,
+      "light",
+      2
+    ],
+    [
+      "arrow",
+      160,
+      320,
+      405,
+      320,
+      "purple",
+      false
+    ],
+    [
+      "text",
+      170,
+      287,
+      230,
+      30,
+      "选择目标后发起 Move",
+      19,
+      "purple",
+      false,
+      "left"
+    ],
+    [
+      "arrow",
+      405,
+      375,
+      650,
+      375,
+      "blue",
+      false
+    ],
+    [
+      "text",
+      415,
+      342,
+      230,
+      30,
+      "MoveStream 请求",
+      20,
+      "blue",
+      false,
+      "left"
+    ],
+    [
+      "arrow",
+      650,
+      430,
+      900,
+      430,
+      "amber",
+      false
+    ],
+    [
+      "text",
+      660,
+      397,
+      235,
+      30,
+      "保留对象 / 拆旧连接",
+      19,
+      "amber",
+      false,
+      "left"
+    ],
+    [
+      "arrow",
+      650,
+      485,
+      405,
+      485,
+      "blue",
+      false
+    ],
+    [
+      "text",
+      415,
+      452,
+      230,
+      30,
+      "MOVE_SINK_INPUT",
+      19,
+      "blue",
+      false,
+      "left"
+    ],
+    [
+      "arrow",
+      405,
+      538,
+      1120,
+      538,
+      "blue",
+      false
+    ],
+    [
+      "text",
+      415,
+      505,
+      700,
+      30,
+      "AddNodeToSink → 目标队列",
+      20,
+      "blue",
+      false,
+      "left"
+    ],
+    [
+      "text",
+      690,
+      576,
+      525,
+      39,
+      "更新设备 / span；RUNNING 才连接",
+      21,
+      "teal",
+      false,
+      "left"
+    ],
+    [
+      "text",
+      64,
+      622,
+      1140,
+      35,
+      "对象身份保留，设备信息与处理连接重建；管理成功仍不代表声学切换完成",
+      21,
+      "navy",
+      true,
+      "left"
+    ]
+  ],
+  "minutes": 4,
+  "section": "源码设计 · 主讲",
+  "next": "继续沿实际调用展开。",
+  "footer": "展开已有目标sink的可迁移播放会话；上游策略调用折叠",
+  "boundary": "MOVE成功是管理语义；声学连续性需实机测量。",
+  "cue": "",
+  "pacing": "先按图走一次调用，再解释条件与设计理由。",
+  "sources": [
+    "FetchOutputDevices L966–978：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/zone/src/audio_zone_service.cpp#L966",
+    "MoveSinkInputByIndexOrName L1065–1095：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_manager.cpp#L1065",
+    "MoveStreamSync L872–916：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L872",
+    "目标Manager接入与映射更新 L1181–1227：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_manager.cpp#L1181",
+    "AddSingleNodeToSink L106–179：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L106",
+    "UPDATE_SPANSIZE 状态处理 L1157–1183：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/hpae_renderer_stream_impl.cpp#L1157"
+  ],
+  "dark": false,
+  "from": "三项创新已经回到全局协同。",
+  "titleSize": 40,
+  "revision": "technical-design-v2"
+}
