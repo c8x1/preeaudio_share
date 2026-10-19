@@ -1,0 +1,152 @@
+{
+  "n": 10,
+  "title": "节点化：处理职责怎样复用",
+  "takeaway": "节点做处理，簇组合节点，Manager管理连接和状态",
+  "objective": "讲清节点/簇/管理器分工及流级、场景级、输出级处理，建立复用的真实代码位置。",
+  "script": "线程和队列主要改善运行时的执行组织。节点化进一步回答：业务增加一种通路时，怎样复用已有处理能力？\n先按职责看图。输入节点读出数据；流级处理承担格式适配、增益和可选会话音效；同场景的流在场景Mixer汇合，相关分支接渲染音效；多个场景再经OutputCluster的转换与输出Mixer汇入SinkOutput。图把几个节点折叠成职责组，真实顺序在附录展开。\nNode负责局部计算，Cluster组合相关节点，Manager管理会话、场景簇、连接和状态。Manager不是每一轮机械从左向右遍历所有节点的调度器。实际由输出端拉取前驱结果，没有现成结果时才递归计算，PCM结果顺着数据方向返回。\n复用也有两种含义：同一种Converter、Gain、Mixer职责可以在不同位置复用其实现；符合场景控制决策时，还可以复用默认场景簇实例。不能因此认为所有流都共享一个有状态音效实例。\n源码里的Connect、可选SessionEffect分支，以及创建/共享/旁路簇的决策，是灵活组装的落点。相较旧HDI模块中分别展开的通路逻辑，它将职责进一步集中。下一页用真实可选会话音效接入，把“扩展性好”变成一个具体操作。",
+  "elements": [
+    [
+      "node",
+      408,
+      246,
+      464,
+      68,
+      "Manager：连接 / 场景 / 状态",
+      "navy",
+      28
+    ],
+    [
+      "arrow",
+      520,
+      323,
+      520,
+      368,
+      "purple",
+      true
+    ],
+    [
+      "line",
+      780,
+      314,
+      780,
+      344,
+      "purple",
+      2
+    ],
+    [
+      "line",
+      780,
+      344,
+      995,
+      344,
+      "purple",
+      2
+    ],
+    [
+      "arrow",
+      995,
+      344,
+      995,
+      368,
+      "purple",
+      true
+    ],
+    [
+      "node",
+      64,
+      385,
+      182,
+      126,
+      "输入节点\n取数",
+      "gray",
+      25
+    ],
+    [
+      "node",
+      306,
+      385,
+      250,
+      126,
+      "按流处理\n转换 / 增益\n可选会话音效",
+      "blue",
+      24
+    ],
+    [
+      "node",
+      616,
+      385,
+      250,
+      126,
+      "场景处理\n场景Mixer\n可选渲染音效",
+      "blue",
+      24
+    ],
+    [
+      "node",
+      926,
+      385,
+      288,
+      126,
+      "输出簇\n转换 / 输出Mixer\nSinkOutput",
+      "teal",
+      24
+    ],
+    [
+      "arrow",
+      257,
+      448,
+      294,
+      448
+    ],
+    [
+      "arrow",
+      567,
+      448,
+      604,
+      448
+    ],
+    [
+      "arrow",
+      877,
+      448,
+      914,
+      448
+    ],
+    [
+      "text",
+      64,
+      552,
+      1150,
+      44,
+      "复用处理职责，按场景连接；输出端按需拉取计算结果",
+      30,
+      "navy",
+      true
+    ],
+    [
+      "text",
+      64,
+      609,
+      1150,
+      37,
+      "类型复用与实例共享有不同边界，状态仍需按流和场景管理",
+      26,
+      "gray"
+    ]
+  ],
+  "minutes": 4,
+  "section": "第三部分 · 创新三：节点化管理",
+  "next": "给一个会话接入音效，哪些节点能复用、连接怎样变化？",
+  "footer": "图按职责折叠节点；可选音效与特殊路径有条件，非所有场景必经拓扑",
+  "boundary": "Manager控制职责与拉图调用不同；复用类型不等于任意共享有状态实例。",
+  "cue": "",
+  "pacing": "按本页分钟数讲述：先联系场景，再解释图，最后回扣结论并转场。",
+  "sources": [
+    "ProcessCluster::Connect L206–232：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_process_cluster.cpp#L206",
+    "OutputCluster::Connect L110–135：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_output_cluster.cpp#L110",
+    "CreateProcessClusterInner L179–240：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L179",
+    "InputPort::ReadPreOutputData L315–325：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/include/hpae_node.h#L315"
+  ],
+  "dark": false,
+  "from": "已经解释运行时的线程和消息改进。"
+}

@@ -1,0 +1,17 @@
+SendRequest L1755–1770：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1755
+1755: void HpaeRendererManager::SendRequest(Request &&request, const std::string &funcName, bool isInit)
+1756: {
+1757:     if (hpaeSignalProcessThread_ == nullptr) {
+1758:         if (sinkInfo_.routeFlag == AUDIO_OUTPUT_FLAG_INTERPHONE) {
+1759:             hpaeNoLockQueue_.PushRequest(std::move(request));
+1760:             hpaeNoLockQueue_.HandleRequests();
+1761:         } else {
+1762:             AUDIO_ERR_LOG("hpaeSignalProcessThread_ is nullptr, %{public}s excute failed", funcName.c_str());
+1763:             HpaeMessageQueueMonitor::ReportMessageQueueException(HPAE_RENDERER_MANAGER_TYPE, funcName,
+1764:                 "thread is nullptr");
+1765:         }
+1766:         return;
+1767:     }
+1768:     hpaeNoLockQueue_.PushRequest(std::move(request));
+1769:     hpaeSignalProcessThread_->Notify();
+1770: }

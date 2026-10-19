@@ -1,0 +1,218 @@
+{
+  "n": 3,
+  "title": "一次场景变化，怎样传遍整个系统",
+  "takeaway": "策略决定行为，服务协调状态，引擎与设备共同落实变化",
+  "objective": "让游戏加入和耳机切换贯穿四层，说明体验来自协同。",
+  "script": "先看游戏加入。应用申报播放场景和会话需求，策略依据当前焦点与并发规则作出决定。决定可能影响新流是否启动，也可能通过通知让相关应用暂停或调整。流服务接收和维护流的生命周期，引擎把允许播放的输入接入相应处理图，输出侧继续消费结果。图中没有规定游戏一定压低音乐，因为那取决于策略和应用行为。\n再看切耳机。设备可用性与路由规则共同影响目标设备，策略选择后，服务和引擎需要落实输出资源与流状态。对于已存在目标sink之间的可移动会话，HPAE有保留SinkInput、拆旧连接、更新设备及span、重新连接处理簇的路径。新设备真正可用还涉及适配与驱动，不能把一次管理层回调当成声学切换完成。\n源码的StartInner也说明这类协作：普通非FAST分支在更新策略侧会话操作后等待数据连接，再启动流，注释明确关联蓝牙连接期间的连续性。我们不在主讲展开调用栈，而是用它支持“先决策、再协调执行条件”的关系。\n因此，焦点正确但通路没有及时更新，或者输出图正确但设备未准备好，都可能影响体验。接下来讨论旧方案和自研时，必须保留这些全局职责。",
+  "elements": [
+    [
+      "text",
+      292,
+      254,
+      213,
+      45,
+      "策略决策",
+      28,
+      "purple",
+      true,
+      "center"
+    ],
+    [
+      "text",
+      529,
+      254,
+      213,
+      45,
+      "流服务",
+      28,
+      "navy",
+      true,
+      "center"
+    ],
+    [
+      "text",
+      766,
+      254,
+      213,
+      45,
+      "引擎执行",
+      28,
+      "blue",
+      true,
+      "center"
+    ],
+    [
+      "text",
+      1003,
+      254,
+      213,
+      45,
+      "设备输出",
+      28,
+      "teal",
+      true,
+      "center"
+    ],
+    [
+      "text",
+      64,
+      342,
+      205,
+      65,
+      "游戏加入",
+      29,
+      "navy",
+      true
+    ],
+    [
+      "node",
+      292,
+      337,
+      213,
+      91,
+      "焦点 / 并发\n通知相关应用",
+      "purple",
+      24
+    ],
+    [
+      "node",
+      529,
+      337,
+      213,
+      91,
+      "协调流的\n启动与状态",
+      "navy",
+      24
+    ],
+    [
+      "node",
+      766,
+      337,
+      213,
+      91,
+      "连接允许播放\n的输入节点",
+      "blue",
+      24
+    ],
+    [
+      "node",
+      1003,
+      337,
+      213,
+      91,
+      "持续消费\n处理结果",
+      "teal",
+      24
+    ],
+    [
+      "arrow",
+      509,
+      382,
+      524,
+      382
+    ],
+    [
+      "arrow",
+      746,
+      382,
+      761,
+      382
+    ],
+    [
+      "arrow",
+      983,
+      382,
+      998,
+      382
+    ],
+    [
+      "text",
+      64,
+      505,
+      205,
+      65,
+      "切到耳机",
+      29,
+      "navy",
+      true
+    ],
+    [
+      "node",
+      292,
+      500,
+      213,
+      91,
+      "可用设备\n路由选择",
+      "purple",
+      24
+    ],
+    [
+      "node",
+      529,
+      500,
+      213,
+      91,
+      "协调资源\n与状态衔接",
+      "navy",
+      24
+    ],
+    [
+      "node",
+      766,
+      500,
+      213,
+      91,
+      "移动输入\n适配新处理图",
+      "blue",
+      24
+    ],
+    [
+      "node",
+      1003,
+      500,
+      213,
+      91,
+      "准备目标输出\n提交声音",
+      "teal",
+      24
+    ],
+    [
+      "arrow",
+      509,
+      545,
+      524,
+      545
+    ],
+    [
+      "arrow",
+      746,
+      545,
+      761,
+      545
+    ],
+    [
+      "arrow",
+      983,
+      545,
+      998,
+      545
+    ]
+  ],
+  "minutes": 3,
+  "section": "第一部分 · 同一个场景贯穿各层",
+  "next": "这套协同在PulseAudio时代怎样实现？先看5.1旧架构。",
+  "footer": "职责关系示意，非完整时序；游戏并发规则与设备可用性取决于具体配置",
+  "boundary": "不固定游戏/提醒的焦点结果；引擎迁移仅指存在目标sink的可移动会话。",
+  "cue": "",
+  "pacing": "按本页分钟数讲述：先联系场景，再解释图，最后回扣结论并转场。",
+  "sources": [
+    "ActivateAudioInterrupt L818–853：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/zone/src/audio_zone_service.cpp#L818",
+    "FetchOutputDevices L966–978：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/zone/src/audio_zone_service.cpp#L966",
+    "StartInner L1576–1606：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L1576",
+    "MoveSinkInputByIndexOrName L1065–1095：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_manager.cpp#L1065",
+    "MoveStreamSync L872–916：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L872",
+    "AddSingleNodeToSink L106–179：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L106"
+  ],
+  "dark": false,
+  "from": "已经明确全局职责图。"
+}

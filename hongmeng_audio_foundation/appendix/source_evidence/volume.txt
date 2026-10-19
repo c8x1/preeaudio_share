@@ -1,0 +1,16 @@
+SetSystemVolumeLevel L720–734：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/zone/src/audio_zone_service.cpp#L720
+720: int32_t AudioZoneService::SetSystemVolumeLevel(int32_t zoneId, DeviceType deviceType, AudioVolumeType volumeType,
+721:     const VolumeScale &volume, int32_t volumeFlag)
+722: {
+723:     AUDIO_INFO_LOG("zoneId: %{public}d, deviceType: %{public}d, volumeType: %{public}d, volumeLevel: %{public}d,"
+724:         "volumeDegree: %{public}d, volumeFlag: %{public}d", zoneId, deviceType, volumeType, volume.VolumeLevel(),
+725:         volume.VolumeDegree(), volumeFlag);
+726:     std::lock_guard<std::mutex> lock(zoneMutex_);
+727:     auto zone = FindZone(zoneId);
+728:     CHECK_AND_RETURN_RET_LOG(zone != nullptr, ERROR, "zone id %{public}d is not found", zoneId);
+729:     CHECK_AND_RETURN_RET_LOG(zone->IsVolumeProxyEnable(deviceType), ERROR,
+730:         "zone id %{public}d IsVolumeProxyEnable is false", zoneId);
+731:     return zone->SetSystemVolumeLevel(deviceType, volumeType, volume, volumeFlag);
+732: }
+733: 
+734: int32_t AudioZoneService::GetSystemVolumeLevel(int32_t zoneId, DeviceType deviceType, AudioVolumeType volumeType)

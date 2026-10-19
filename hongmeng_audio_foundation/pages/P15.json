@@ -1,0 +1,122 @@
+{
+  "n": 15,
+  "title": "鸿蒙音频底座的协同与演进",
+  "takeaway": "从同一个场景出发，理解系统分工、执行创新和最终体验",
+  "objective": "以贯穿场景总结策略/服务/引擎/设备全局关系、三项创新和收益，进入答疑。",
+  "script": "再听开场同一段声音。音乐、游戏和提醒没有变，我们现在可以解释支撑它们的整个系统。\n策略组织行为：谁能播放、怎样并发、选择什么设备、如何处理音量与焦点。流服务协调状态和数据条件。引擎执行处理与提交，设备适配和驱动把声音送到真实输出。只有这些职责衔接正确，用户才会感到系统行为合理。\n我们先看旧PA集成，理解已经具备的能力和执行边界，再看自研改变。线程与Buffer精简减少已核验的跨线程交接；无锁消息队列改善常规控制请求发布与消费；节点化把转换、增益、混音和音效组织成可复用处理单元。这三项改动分别作用于执行链、控制流与通路组织。\n团队提供的成果是时延降低、性能提升、功耗降低，兼顾端到端抗抖动，同时改善扩展性。源码解释机制，完整场景测试验证系统收益，具体幅度仍需要带条件的数据。\n请大家各用一句话回答：收到新需求时，先找哪一层作决定？改变执行模型时，哪些连续性和状态约束必须守住？讨论收益时，观察的是局部阶段还是用户端到端体验？能区分这些问题，就能在算法、框架、设备与测试之间更有效地协作。\n下面五分钟答疑。需要深入线程、队列、节点或设备迁移时，我们进入对应附录。",
+  "elements": [
+    [
+      "text",
+      64,
+      254,
+      1140,
+      43,
+      "音乐播放    游戏加入    提醒出现    切到耳机",
+      31,
+      "white",
+      true
+    ],
+    [
+      "node",
+      64,
+      353,
+      245,
+      103,
+      "策略\n组织行为",
+      "purple",
+      29
+    ],
+    [
+      "node",
+      366,
+      353,
+      245,
+      103,
+      "流服务\n协调状态",
+      "gray",
+      29
+    ],
+    [
+      "node",
+      668,
+      353,
+      245,
+      103,
+      "自研引擎\n高效执行",
+      "blue",
+      29
+    ],
+    [
+      "node",
+      970,
+      353,
+      245,
+      103,
+      "设备链路\n兑现输出",
+      "teal",
+      29
+    ],
+    [
+      "arrow",
+      318,
+      404,
+      356,
+      404,
+      "#C1D7EB"
+    ],
+    [
+      "arrow",
+      620,
+      404,
+      658,
+      404,
+      "#C1D7EB"
+    ],
+    [
+      "arrow",
+      922,
+      404,
+      960,
+      404,
+      "#C1D7EB"
+    ],
+    [
+      "text",
+      64,
+      518,
+      1150,
+      65,
+      "协同有序    执行高效    扩展灵活",
+      43,
+      "white",
+      true
+    ],
+    [
+      "text",
+      64,
+      604,
+      1150,
+      40,
+      "用完整场景验证收益，带着职责和约束讨论下一次演进",
+      28,
+      "#C5D9EB"
+    ]
+  ],
+  "minutes": 4,
+  "section": "一段声音的旅程 · 回到整个底座",
+  "next": "进入5分钟Q&A，按问题选择A1–A6。",
+  "footer": "团队定性结论已有说明；量化结果需配测试条件 / Q&A 5分钟",
+  "boundary": "收束归纳，不新增产品性能保证或统一策略规则。",
+  "cue": "回放A：01_scene_mix.wav，10秒。",
+  "pacing": "按本页分钟数讲述：先联系场景，再解释图，最后回扣结论并转场。",
+  "sources": [
+    "ActivateAudioInterrupt L818–853：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/zone/src/audio_zone_service.cpp#L818",
+    "FetchOutputDevices L966–978：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/zone/src/audio_zone_service.cpp#L966",
+    "StartInner L1576–1606：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L1576",
+    "Notify / Run L75–125：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_signal_process_thread.cpp#L75",
+    "ProcessCluster::Connect L206–232：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_process_cluster.cpp#L206",
+    "SinkOutput::DoProcess / RenderFrame L121–165：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L121"
+  ],
+  "dark": true,
+  "from": "已经明确收益评价和完整场景验证方法。"
+}

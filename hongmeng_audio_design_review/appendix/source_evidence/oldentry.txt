@@ -1,0 +1,19 @@
+GetPlaybackManager L22–39：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/src/i_stream_manager.cpp#L22
+22: {
+23:     switch (managerType) {
+24:         case DIRECT_PLAYBACK:
+25:             static ProAudioStreamManager directManager(DIRECT_PLAYBACK);
+26:             return directManager;
+27:         case VOIP_PLAYBACK:
+28:             static ProAudioStreamManager voipManager(VOIP_PLAYBACK);
+29:             return voipManager;
+30:         case PLAYBACK:
+31:         default:
+32:             static PaAdapterManager adapterManager(PLAYBACK);
+33:             return adapterManager;
+34:     }
+35: }
+36: 
+37: IStreamManager &IStreamManager::GetDupPlaybackManager()
+38: {
+39:     static PaAdapterManager adapterManager(DUP_PLAYBACK);

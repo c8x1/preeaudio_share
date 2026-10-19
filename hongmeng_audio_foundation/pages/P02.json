@@ -1,0 +1,154 @@
+{
+  "n": 2,
+  "title": "鸿蒙音频底座：谁决策，谁管理，谁执行",
+  "takeaway": "策略组织系统行为，流服务管理状态，引擎处理数据，设备兑现输出",
+  "objective": "用一张全局图明确应用接口、策略、流服务、引擎、适配与驱动的职责和控制/数据方向。",
+  "script": "先把刚才的四个动作放进系统。应用通过AudioRenderer等接口表达播放需求。策略服务依据场景、焦点、设备和音量规则作出决定。流服务负责接入、状态、共享音频缓冲和生命周期。引擎执行转换、混音、音效等处理，再通过Sink与HDI交给驱动和设备。\n图的横向实线表示播放数据职责链，紫色虚线表示控制关系。它是职责图，不是进程部署图，也不是所有消息都必定按一条同步调用栈经过。策略可能通知应用处理焦点变化，音量和路由也会通过各自的管理路径影响执行。\n源码里，AudioZoneService把焦点激活转给InterruptService，根据usage和客户端信息获取输出设备，并对接音量操作。服务端RendererInServer启动流时，先更新策略侧会话操作，再在适用分支等待设备连接，随后启动具体流。这说明策略与服务协作有实际接口，而不只是画在架构图上方。\n自研主要改变引擎侧的处理和执行组织，但更快的引擎仍要执行正确的策略、使用正确的设备、维护一致的流状态。我们会反复回到这张职责图，判断一项变化应该由哪一层决定、哪一层落实。",
+  "elements": [
+    [
+      "node",
+      366,
+      251,
+      548,
+      73,
+      "音频策略：焦点 / 路由 / 音量",
+      "purple",
+      29
+    ],
+    [
+      "arrow",
+      430,
+      332,
+      430,
+      374,
+      "purple",
+      true
+    ],
+    [
+      "arrow",
+      785,
+      332,
+      785,
+      374,
+      "purple",
+      true
+    ],
+    [
+      "node",
+      64,
+      387,
+      210,
+      110,
+      "应用接口\nAudioRenderer",
+      "gray",
+      25
+    ],
+    [
+      "node",
+      350,
+      387,
+      240,
+      110,
+      "流服务\n接入 / 状态 / 缓冲",
+      "navy",
+      24
+    ],
+    [
+      "node",
+      666,
+      387,
+      240,
+      110,
+      "自研引擎\n处理 / 调度",
+      "blue",
+      27
+    ],
+    [
+      "node",
+      982,
+      387,
+      232,
+      110,
+      "设备适配 / 驱动\n硬件输出",
+      "teal",
+      24
+    ],
+    [
+      "arrow",
+      284,
+      442,
+      338,
+      442
+    ],
+    [
+      "arrow",
+      600,
+      442,
+      654,
+      442
+    ],
+    [
+      "arrow",
+      916,
+      442,
+      970,
+      442
+    ],
+    [
+      "arrow",
+      366,
+      287,
+      169,
+      287,
+      "purple",
+      true
+    ],
+    [
+      "arrow",
+      169,
+      287,
+      169,
+      375,
+      "purple",
+      true
+    ],
+    [
+      "text",
+      64,
+      555,
+      1150,
+      43,
+      "实线：播放数据职责链       虚线：控制影响（接口路径有折叠）",
+      27,
+      "navy"
+    ],
+    [
+      "text",
+      64,
+      611,
+      1150,
+      35,
+      "本次重点在引擎，评价对象始终是整个音频底座",
+      26,
+      "blue",
+      true
+    ]
+  ],
+  "minutes": 4,
+  "section": "第一部分 · 全局协同",
+  "next": "把游戏加入和耳机切换放进这张职责图，看看一次变化怎样传递。",
+  "footer": "职责示意，非进程边界或完整调用栈；限定普通播放，策略反馈与控制路径有折叠",
+  "boundary": "接口控制路径有折叠；焦点通知可回到应用，不能假定引擎单独完成全部策略行为。",
+  "cue": "",
+  "pacing": "按本页分钟数讲述：先联系场景，再解释图，最后回扣结论并转场。",
+  "sources": [
+    "ActivateAudioInterrupt L818–853：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/zone/src/audio_zone_service.cpp#L818",
+    "FetchOutputDevices L966–978：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/zone/src/audio_zone_service.cpp#L966",
+    "SetSystemVolumeLevel L720–734：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/zone/src/audio_zone_service.cpp#L720",
+    "StartInner L1576–1606：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L1576",
+    "CreateRendererStream L273–307：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/hpae_adapter_manager.cpp#L273",
+    "SinkOutput::DoProcess / RenderFrame L121–165：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L121"
+  ],
+  "dark": false,
+  "from": "开场提出了应用、场景和设备变化中的体验要求。"
+}

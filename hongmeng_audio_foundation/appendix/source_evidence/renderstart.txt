@@ -1,0 +1,28 @@
+RendererManager::Start L919–945：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L919
+919: int32_t HpaeRendererManager::Start(uint32_t sessionId)
+920: {
+921:     auto request = [this, sessionId]() {
+922:         Trace trace("[" + std::to_string(sessionId) + "]HpaeRendererManager::Start");
+923:         CHECK_AND_RETURN_LOG(SafeGetMap(sinkInputNodeMap_, sessionId),
+924:             "Start not find sessionId %{public}u", sessionId);
+925:         AUDIO_INFO_LOG("Start sessionId %{public}u, deviceName %{public}s",
+926:             sessionId, GetEncryptStr(sinkInfo_.deviceName).c_str());
+927:         sinkInputNodeMap_[sessionId]->SetState(HPAE_SESSION_RUNNING);
+928:         HandlePriPaPower(sessionId);
+929:         ConnectInputSession(sessionId);
+930:         // Arm fade-in right after connect: SessionEffectStart below can take milliseconds and
+931:         // a client that pre-buffered data before Start would otherwise leak full-gain frames
+932:         // in the connect-to-arm window.
+933:         SetSessionFade(sessionId, OPERATION_STARTED);
+934:         HpaeProcessorType sceneType = GetConnectedProcessorType(sessionId);
+935:         if (HasSessionEffect(sessionId)) {
+936:             sceneClusterMap_[sceneType]->SessionEffectStart(sessionId);
+937:         }
+938:         SetSessionState(sessionId, HPAE_SESSION_RUNNING);
+939:         UpdateClusterStreamInfo(sceneType);
+940:         isNeedInitEffectBufferFlagMap_[sessionId] = true;
+941:         NotifyStreamChangeToSink(STREAM_CHANGE_TYPE_STATE_CHANGE, sessionId, RENDERER_RUNNING);
+942:     };
+943:     SendRequest(request, __func__);
+944:     return SUCCESS;
+945: }

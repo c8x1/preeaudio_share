@@ -1,0 +1,170 @@
+{
+  "n": 13,
+  "title": "收益怎样在整条音频链路上体现",
+  "takeaway": "机制提供改善路径，系统收益需要在一致的场景和测量边界下观察",
+  "objective": "将创新关联时延/性能/功耗/扩展，明确局部与端到端不同并呈现团队定性成果。",
+  "script": "团队给出的定性成果是降低时延、提升性能、降低功耗，并保持抗抖动能力。现在把这些结果与我们刚刚解释的机制联系起来。\n减少线程与Buffer中转，减少声音在执行边界之间等待的机会；常规控制队列减少互斥锁竞争，有助于请求进入执行侧。这两类改动可影响响应和资源开销，但一次RenderFrame前的局部耗时不等于应用事件到声音出现的完整时延。应用供数、策略协调、设备连接和驱动仍在链路里。\n性能和功耗同样要区分观察对象。局部CPU时间、线程唤醒和调度情况帮助定位原因。最终CPU占用、单位时间处理能力或设备能量，需要在相同业务语义与设备负载下观察。少一次唤醒是机制机会，不能直接换算成固定功耗百分比。\n节点化主要体现为处理职责复用、修改范围更集中及扩展接口更明确。评价时可以看新增需求改动了哪些模块、需要补哪些适配与回归，而不只数节点数量。我们没有内部工程量数据，因此不编造交付周期缩短幅度。\n对听众而言，这一页把“做了什么”连到“为什么值得做”，也明确结果要在哪里测。下一页给一份能执行的全场景验证设计，说明未来真实数据应该怎样补进来。",
+  "elements": [
+    [
+      "text",
+      64,
+      249,
+      295,
+      42,
+      "收益维度",
+      27,
+      "gray",
+      true
+    ],
+    [
+      "text",
+      380,
+      249,
+      520,
+      42,
+      "机制怎样起作用",
+      27,
+      "gray",
+      true
+    ],
+    [
+      "text",
+      967,
+      249,
+      247,
+      42,
+      "系统观察",
+      27,
+      "gray",
+      true
+    ],
+    [
+      "text",
+      64,
+      332,
+      280,
+      45,
+      "响应时延",
+      31,
+      "blue",
+      true
+    ],
+    [
+      "text",
+      380,
+      323,
+      539,
+      76,
+      "中转与等待机会减少\n控制流转更顺畅",
+      28,
+      "navy"
+    ],
+    [
+      "text",
+      967,
+      323,
+      247,
+      76,
+      "端到端分布\n局部耗时",
+      26,
+      "blue"
+    ],
+    [
+      "line",
+      64,
+      416,
+      1214,
+      416,
+      "light",
+      1
+    ],
+    [
+      "text",
+      64,
+      452,
+      280,
+      45,
+      "性能与功耗",
+      31,
+      "teal",
+      true
+    ],
+    [
+      "text",
+      380,
+      443,
+      539,
+      76,
+      "同步 / 唤醒 / 调度开销减少\n处理链协同执行",
+      28,
+      "navy"
+    ],
+    [
+      "text",
+      967,
+      443,
+      247,
+      76,
+      "CPU / 唤醒\n设备能量",
+      26,
+      "teal"
+    ],
+    [
+      "line",
+      64,
+      536,
+      1214,
+      536,
+      "light",
+      1
+    ],
+    [
+      "text",
+      64,
+      572,
+      280,
+      45,
+      "扩展性",
+      31,
+      "purple",
+      true
+    ],
+    [
+      "text",
+      380,
+      563,
+      539,
+      76,
+      "复用节点与职责\n集中局部改动",
+      28,
+      "navy"
+    ],
+    [
+      "text",
+      967,
+      563,
+      247,
+      76,
+      "改动范围\n适配与回归",
+      26,
+      "purple"
+    ]
+  ],
+  "minutes": 4,
+  "section": "第四部分 · 从机制到系统收益",
+  "next": "同一组音乐/游戏/提醒/切耳机场景，怎样比较旧新方案？",
+  "footer": "团队定性成果：时延降低、性能提升、功耗降低且保持抗抖动；未给出量化幅度",
+  "boundary": "上屏为机制与评价维度对应，不是测量结果；局部与端到端不能自动同比。",
+  "cue": "",
+  "pacing": "按本页分钟数讲述：先联系场景，再解释图，最后回扣结论并转场。",
+  "sources": [
+    "ProcessRenderUseTiming L2449–2477：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L2449",
+    "ProcessHdiRendererPrimary / ThreadFuncWriteHDI L3821–3887：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L3821",
+    "SinkOutput::DoProcess / RenderFrame L121–165：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L121",
+    "PushRequest / HandleRequests / TryExpandQueue L57–145：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L57",
+    "CreateProcessClusterInner L179–240：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L179",
+    "CreateSessionEffectNode L547–582：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_process_cluster.cpp#L547"
+  ],
+  "dark": false,
+  "from": "三项创新已经回到全局协同。"
+}

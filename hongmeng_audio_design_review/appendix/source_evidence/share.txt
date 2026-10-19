@@ -1,0 +1,63 @@
+CreateProcessClusterInner L179–240：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L179
+179: void HpaeRendererManager::CreateDefaultProcessCluster(HpaeNodeInfo &nodeInfo)
+180: {
+181:     HILOG_COMM_INFO("[CreateDefaultProcessCluster]use default processCluster");
+182:     if (!SafeGetMap(sceneClusterMap_, HPAE_SCENE_DEFAULT)) {
+183:         AUDIO_INFO_LOG("default processCluster is null, create default processCluster");
+184:         HpaeNodeInfo temp = nodeInfo;
+185:         temp.sceneType = HPAE_SCENE_DEFAULT;
+186:         temp.renderId = renderId_;
+187:         temp.deviceType = static_cast<int32_t>(renderDeviceType_);
+188:         auto hpaeProcessCluster = std::make_shared<HpaeProcessCluster>(temp, sinkInfo_);
+189:         sceneClusterMap_[HPAE_SCENE_DEFAULT] = hpaeProcessCluster;
+190:         sceneClusterMap_[nodeInfo.sceneType] = hpaeProcessCluster;
+191:         sceneTypeToProcessClusterCountMap_[HPAE_SCENE_DEFAULT]++;
+192:     } else {
+193:         sceneClusterMap_[nodeInfo.sceneType] = sceneClusterMap_[HPAE_SCENE_DEFAULT];
+194:         sceneTypeToProcessClusterCountMap_[HPAE_SCENE_DEFAULT]++;
+195:     }
+196:     return;
+197: }
+198: 
+199: void HpaeRendererManager::CreateProcessClusterInner(HpaeNodeInfo &nodeInfo, int32_t processClusterDecision)
+200: {
+201:     HpaeNodeInfo temp = nodeInfo;
+202:     std::shared_ptr<HpaeProcessCluster> hpaeProcessCluster = nullptr;
+203:     sessionNodeMap_[nodeInfo.sessionId].bypass = (processClusterDecision == USE_NONE_PROCESSCLUSTER) ? true : false;
+204:     switch (processClusterDecision) {
+205:         case NO_NEED_TO_CREATE_PROCESSCLUSTER:
+206:             HILOG_COMM_INFO("[CreateProcessClusterInner]no need to create processCluster");
+207:             CHECK_AND_RETURN(!SafeGetMap(sceneClusterMap_, nodeInfo.sceneType));
+208:             AUDIO_INFO_LOG("processCluster is null, create a new processCluster");
+209:             sceneClusterMap_[nodeInfo.sceneType] = std::make_shared<HpaeProcessCluster>(nodeInfo, sinkInfo_);
+210:             break;
+211:         case CREATE_NEW_PROCESSCLUSTER:
+212:             CHECK_AND_RETURN(!SafeGetMap(sceneClusterMap_, nodeInfo.sceneType));
+213:             HILOG_COMM_INFO("[CreateProcessClusterInner]create new processCluster");
+214:             sceneClusterMap_[nodeInfo.sceneType] = std::make_shared<HpaeProcessCluster>(nodeInfo, sinkInfo_);
+215:             break;
+216:         case CREATE_DEFAULT_PROCESSCLUSTER:
+217:             temp.sceneType = HPAE_SCENE_DEFAULT;
+218:             if (!SafeGetMap(sceneClusterMap_, HPAE_SCENE_DEFAULT)) {
+219:                 HILOG_COMM_INFO("[CreateProcessClusterInner]begin control, create default processCluster");
+220:                 hpaeProcessCluster = std::make_shared<HpaeProcessCluster>(temp, sinkInfo_);
+221:                 sceneClusterMap_[HPAE_SCENE_DEFAULT] = hpaeProcessCluster;
+222:                 sceneClusterMap_[nodeInfo.sceneType] = hpaeProcessCluster;
+223:             } else {
+224:                 sceneClusterMap_[nodeInfo.sceneType] = sceneClusterMap_[HPAE_SCENE_DEFAULT];
+225:             }
+226:             sceneTypeToProcessClusterCountMap_[HPAE_SCENE_DEFAULT]++;
+227:             break;
+228:         case USE_DEFAULT_PROCESSCLUSTER:
+229:             CreateDefaultProcessCluster(nodeInfo);
+230:             break;
+231:         case USE_NONE_PROCESSCLUSTER:
+232:             HILOG_COMM_INFO("[CreateProcessClusterInner]use none processCluster");
+233:             break;
+234:         case CREATE_EXTRA_PROCESSCLUSTER:
+235:             HILOG_COMM_INFO("[CreateProcessClusterInner]out of control");
+236:             CHECK_AND_RETURN(!SafeGetMap(sceneClusterMap_, nodeInfo.sceneType));
+237:             AUDIO_INFO_LOG("out of control, create a new processCluster");
+238:             sceneClusterMap_[nodeInfo.sceneType] = std::make_shared<HpaeProcessCluster>(nodeInfo, sinkInfo_);
+239:             break;
+240:         default:

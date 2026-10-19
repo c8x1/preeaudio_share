@@ -1,0 +1,282 @@
+{
+  "n": 3,
+  "title": "Start 如何穿过策略、服务与两级队列",
+  "takeaway": "管理状态回程与设备级执行分叉，不能合并成一次成功",
+  "objective": "管理状态回程与设备级执行分叉，不能合并成一次成功",
+  "script": "客户端先经IPC向RendererInServer请求Start。服务端验证状态和共享缓冲，调用策略UpdateSessionOperation；普通非FAST路径在设备激活后WaitForDataConnection，目的是避免蓝牙连接前后数据不连续造成爆音，之后调用流Start。HpaeManager先把Start封成管理请求。管理线程消费时找到RendererManager，再调用它的Start，而RendererManager只是把具体连接、淡入、音效工作放入设备级队列。随后管理状态STARTED可以回传服务端和客户端，客户端等待RUNNING。\n图上第二次入队与上行状态是两条分叉，不用从设备级队列向STARTED画完成箭头。RendererManager的请求实际执行时才置HPAE_SESSION_RUNNING、ConnectInputSession、SetSessionFade、启动可选SessionEffect。这里的RUNNING是管理状态，不是设备或声学首帧的同步屏障。策略先被调用是系统协同的一部分，具体声音并发规则和目标设备依业务策略而定。",
+  "elements": [
+    [
+      "text",
+      50,
+      240,
+      230,
+      48,
+      "客户端",
+      23,
+      "navy",
+      true,
+      "center"
+    ],
+    [
+      "line",
+      165,
+      295,
+      165,
+      601,
+      "light",
+      2
+    ],
+    [
+      "text",
+      285,
+      240,
+      230,
+      48,
+      "流服务",
+      23,
+      "navy",
+      true,
+      "center"
+    ],
+    [
+      "line",
+      400,
+      295,
+      400,
+      601,
+      "light",
+      2
+    ],
+    [
+      "text",
+      525,
+      240,
+      230,
+      48,
+      "策略",
+      23,
+      "navy",
+      true,
+      "center"
+    ],
+    [
+      "line",
+      640,
+      295,
+      640,
+      601,
+      "light",
+      2
+    ],
+    [
+      "text",
+      765,
+      240,
+      230,
+      48,
+      "HpaeManager",
+      23,
+      "navy",
+      true,
+      "center"
+    ],
+    [
+      "line",
+      880,
+      295,
+      880,
+      601,
+      "light",
+      2
+    ],
+    [
+      "text",
+      995,
+      240,
+      230,
+      48,
+      "RendererManager",
+      23,
+      "navy",
+      true,
+      "center"
+    ],
+    [
+      "line",
+      1110,
+      295,
+      1110,
+      601,
+      "light",
+      2
+    ],
+    [
+      "arrow",
+      165,
+      315,
+      400,
+      315,
+      "navy",
+      false
+    ],
+    [
+      "text",
+      175,
+      282,
+      220,
+      30,
+      "IPC Start",
+      21,
+      "navy",
+      false,
+      "left"
+    ],
+    [
+      "arrow",
+      400,
+      360,
+      640,
+      360,
+      "purple",
+      false
+    ],
+    [
+      "text",
+      410,
+      327,
+      225,
+      30,
+      "UpdateSessionOperation",
+      19,
+      "purple",
+      false,
+      "left"
+    ],
+    [
+      "text",
+      450,
+      391,
+      390,
+      35,
+      "非 FAST：WaitForDataConnection",
+      20,
+      "purple",
+      false,
+      "left"
+    ],
+    [
+      "arrow",
+      400,
+      448,
+      880,
+      448,
+      "blue",
+      false
+    ],
+    [
+      "text",
+      410,
+      415,
+      465,
+      30,
+      "stream Start → 管理队列",
+      20,
+      "blue",
+      false,
+      "left"
+    ],
+    [
+      "arrow",
+      880,
+      499,
+      1110,
+      499,
+      "blue",
+      false
+    ],
+    [
+      "text",
+      890,
+      466,
+      215,
+      30,
+      "设备级 Start 入队",
+      20,
+      "blue",
+      false,
+      "left"
+    ],
+    [
+      "arrow",
+      880,
+      553,
+      400,
+      553,
+      "navy",
+      false
+    ],
+    [
+      "text",
+      410,
+      520,
+      465,
+      30,
+      "STARTED 回程",
+      20,
+      "navy",
+      false,
+      "left"
+    ],
+    [
+      "arrow",
+      400,
+      594,
+      165,
+      594,
+      "navy",
+      false
+    ],
+    [
+      "text",
+      175,
+      561,
+      220,
+      30,
+      "RUNNING 通知",
+      20,
+      "navy",
+      false,
+      "left"
+    ],
+    [
+      "text",
+      70,
+      622,
+      1140,
+      35,
+      "设备请求另行执行；状态回程没有首帧消费完成屏障",
+      23,
+      "blue",
+      true,
+      "left"
+    ]
+  ],
+  "minutes": 3,
+  "section": "源码设计 · 主讲",
+  "next": "继续沿实际调用展开。",
+  "footer": "控制泳道；设备执行发生于另一次排队，未绘出精细回调条件",
+  "boundary": "普通 HPAE 路径；非 FAST 的连接等待有条件；无跨线程全局总序。",
+  "cue": "",
+  "pacing": "先按图走一次调用，再解释条件与设计理由。",
+  "sources": [
+    "StartAudioStream / 等待RUNNING L1398–1454：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/client/src/renderer_in_client_public.cpp#L1398",
+    "StartInner L1576–1606：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L1576",
+    "HpaeManager::Start L1830–1875：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_manager.cpp#L1830",
+    "RendererManager::Start L919–945：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L919",
+    "STARTED 状态回程 L411–428：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L411"
+  ],
+  "dark": false,
+  "from": "已经明确全局职责图。",
+  "titleSize": 40,
+  "revision": "technical-design-v2"
+}

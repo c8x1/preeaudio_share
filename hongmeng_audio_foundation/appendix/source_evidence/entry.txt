@@ -1,0 +1,37 @@
+GetPlaybackManager L29–64：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/i_stream_manager.cpp#L29
+29:     switch (managerType) {
+30:         case DIRECT_PLAYBACK:
+31:             static HpaeAdapterManager directManager(managerType);
+32:             return directManager;
+33:         case VOIP_PLAYBACK:
+34:             static HpaeAdapterManager voipManager(managerType);
+35:             return voipManager;
+36:         case HWDECODING_PLAYBACK:
+37:             static HWDecodingStreamManager hwDecodingManger;
+38:             return hwDecodingManger;
+39:         case AUDIO_VIVID_3DA_DIRECT_PLAYBACK:
+40:             static ProAudioStreamManager cabin3DADirectManager(AUDIO_VIVID_3DA_DIRECT_PLAYBACK);
+41:             return cabin3DADirectManager;
+42:         case PLAYBACK:
+43:         default:
+44: #ifdef SUPPORT_OLD_ENGINE
+45:             int32_t engineFlag = GetEngineFlag();
+46:             if (engineFlag == 1) {
+47:                 static HpaeAdapterManager adapterManager(PLAYBACK);
+48:                 return adapterManager;
+49:             } else {
+50:                 static PaAdapterManager adapterManager(PLAYBACK);
+51:                 return adapterManager;
+52:             }
+53: #else
+54:             static HpaeAdapterManager adapterManager(PLAYBACK);
+55:             return adapterManager;
+56: #endif
+57:     }
+58: }
+59: 
+60: IStreamManager &IStreamManager::GetDupPlaybackManager()
+61: {
+62: #ifdef SUPPORT_OLD_ENGINE
+63:     int32_t engineFlag = GetEngineFlag();
+64:     if (engineFlag == 1) {

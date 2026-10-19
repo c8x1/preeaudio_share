@@ -1,0 +1,46 @@
+MoveStreamSync L872–916：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L872
+872: void HpaeRendererManager::MoveStreamSync(uint32_t sessionId, const std::string &sinkName)
+873: {
+874:     if (!SafeGetMap(sinkInputNodeMap_, sessionId)) {
+875:         AUDIO_ERR_LOG("[StartMove] session:%{public}u failed,can not find session,move %{public}s --> %{public}s",
+876:             sessionId, GetEncryptStr(sinkInfo_.deviceName).c_str(), GetEncryptStr(sinkName).c_str());
+877:         TriggerCallback(MOVE_SESSION_FAILED, HPAE_STREAM_CLASS_TYPE_PLAY, sessionId, MOVE_SINGLE, sinkName);
+878:         HpaeStreamMoveMonitor::ReportStreamMoveException(0, sessionId, HPAE_STREAM_CLASS_TYPE_PLAY,
+879:             sinkInfo_.deviceName, sinkName, "not find session node");
+880:         return;
+881:     }
+882: 
+883:     if (sinkName.empty()) {
+884:         AUDIO_ERR_LOG("[StartMove] session:%{public}u failed,sinkName is empty", sessionId);
+885:         TriggerCallback(MOVE_SESSION_FAILED, HPAE_STREAM_CLASS_TYPE_PLAY, sessionId, MOVE_SINGLE, sinkName);
+886:         HpaeStreamMoveMonitor::ReportStreamMoveException(sinkInputNodeMap_[sessionId]->GetAppUid(), sessionId,
+887:             HPAE_STREAM_CLASS_TYPE_PLAY, sinkInfo_.deviceName, sinkName, "sinkName is empty");
+888:         return;
+889:     }
+890: 
+891:     HpaeProcessorType sceneType = GetConnectedProcessorType(sessionId);
+892:     AUDIO_INFO_LOG("[StartMove] session: %{public}u,sink [%{public}s] --> [%{public}s]",
+893:         sessionId, GetEncryptStr(sinkInfo_.deviceName).c_str(), GetEncryptStr(sinkName).c_str());
+894:     if (HasSessionEffect(sessionId)) {
+895:         auto clusterIt = sceneClusterMap_.find(sceneType);
+896:         if (clusterIt != sceneClusterMap_.end()) {
+897:             clusterIt->second->SessionEffectPrepareMoveStream(sessionId);
+898:         }
+899:     }
+900:     std::shared_ptr<HpaeSinkInputNode> inputNode = sinkInputNodeMap_[sessionId];
+901:     TriggerStreamState(sessionId, inputNode);
+902:     DeleteInputSession(sessionId, SessionEffectMoveMode::KEEP_ATTACH_STATE_FOR_MOVE);
+903:     UpdateClusterStreamInfo(sceneType);
+904:     std::string name = sinkName;
+905:     TriggerCallback(MOVE_SINK_INPUT, inputNode, name);
+906: }
+907: 
+908: int32_t HpaeRendererManager::MoveStream(uint32_t sessionId, const std::string &sinkName)
+909: {
+910:     if (!IsInit()) {
+911:         MoveStreamSync(sessionId, sinkName);
+912:     } else {
+913:         auto request = [this, sessionId, sinkName]() { MoveStreamSync(sessionId, sinkName); };
+914:         SendRequest(request, __func__);
+915:     }
+916:     return SUCCESS;

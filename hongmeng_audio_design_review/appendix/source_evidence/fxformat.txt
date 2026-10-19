@@ -1,0 +1,16 @@
+SessionEffect 输入格式约束 L351–365：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_process_cluster.cpp#L351
+351:     // get format info from effect node
+352:     int32_t ret = SUCCESS;
+353:     if (renderEffectNode_ != nullptr) {
+354:         ret = renderEffectNode_->GetExpectedInputChannelInfo(basicFormat);
+355:     }
+356:     // SessionEffectNode (AISS) requires 48kHz input
+357:     if (SafeGetMap(idSessionEffectMap_, sessionId)) {
+358:         basicFormat.rate = SAMPLE_RATE_48000;
+359:         basicFormat.audioChannelInfo.numChannels = STEREO;
+360:         basicFormat.audioChannelInfo.channelLayout = CH_LAYOUT_STEREO;
+361:     }
+362:     return ret;
+363: }
+364: 
+365: int32_t HpaeProcessCluster::AudioRendererCreate(HpaeNodeInfo &nodeInfo, const HpaeSinkInfo &sinkInfo)

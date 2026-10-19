@@ -1,0 +1,30 @@
+Start / pa_stream_cork L154–182：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/src/pa_renderer_stream_impl.cpp#L154
+154:     ResetOffload();
+155: 
+156:     return SUCCESS;
+157: }
+158: 
+159: int32_t PaRendererStreamImpl::Start()
+160: {
+161:     AUDIO_INFO_LOG("[%{public}u] Enter", streamIndex_);
+162:     PaLockGuard lock(mainloop_);
+163:     if (CheckReturnIfStreamInvalid(paStream_, ERR_ILLEGAL_STATE) < 0) {
+164:         return ERR_ILLEGAL_STATE;
+165:     }
+166:     pa_operation *operation = nullptr;
+167: 
+168:     pa_stream_state_t state = pa_stream_get_state(paStream_);
+169:     if (state != PA_STREAM_READY) {
+170:         return ERR_OPERATION_FAILED;
+171:     }
+172: 
+173:     streamCmdStatus_ = 0;
+174:     operation = pa_stream_cork(paStream_, 0, PAStreamStartSuccessCb, reinterpret_cast<void *>(this));
+175:     CHECK_AND_RETURN_RET_LOG(operation != nullptr, ERR_OPERATION_FAILED, "pa_stream_cork operation is null");
+176:     pa_operation_unref(operation);
+177: 
+178:     std::shared_ptr<AudioEffectVolume> audioEffectVolume = AudioEffectVolume::GetInstance();
+179:     if (audioEffectVolume != nullptr) {
+180:         std::string sessionIDTemp = std::to_string(streamIndex_);
+181:         audioEffectVolume->SetStreamVolume(sessionIDTemp, clientVolume_);
+182:     }

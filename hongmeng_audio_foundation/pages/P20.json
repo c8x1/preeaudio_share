@@ -1,0 +1,120 @@
+{
+  "n": 20,
+  "title": "A5  设备切换中的节点与状态衔接",
+  "takeaway": "引擎迁移已有输入节点，并按目标设备更新格式、标识与连接",
+  "objective": "补充普通可移动会话的迁移过程、状态保留及上层策略/设备前提。",
+  "script": "设备切换首先涉及发现、可用性与策略路由，服务还要协调目标输出资源。这里展开的是已存在目标sink之间的一条普通可移动会话路径，不能当成全部蓝牙连接或所有设备切换的唯一流程。\nHpaeManager的MoveSinkInputByIndexOrName排队检查流与目标、可移动性和移动状态。旧RendererManager的MoveStreamSync在需要时准备SessionEffect迁移，保留shared_ptr指向的SinkInput，拆除旧处理图连接，并通过回调交出节点。它不是把应用流全部销毁再从头解码。\n目标侧AddSingleNodeToSink更新设备类别、网络/地址等身份，按目标采样率和frameLen调整，通知UPDATE_SPAN_SIZE，创建对应处理簇。RUNNING会话再接入处理图。历史缓存和音效attach状态有条件保留，也有失效逻辑，不是所有缓存一概清空或一概复用。\nManager还要更新session到sink及首选设备等映射，必要时在目标设备上重建会话音效绑定。AddNodeToSink自身仍会排队，管理层成功回报不能直接代表声学切换完成。\n这说明节点化让迁移可在明确职责边界内组织，但格式、身份、span、音效与状态必须一起衔接。路由选对、图接对、硬件可用，三者都需要验证。",
+  "elements": [
+    [
+      "text",
+      64,
+      247,
+      1150,
+      42,
+      "上层前提：策略选择目标设备，服务协调输出资源和状态",
+      28,
+      "purple",
+      true
+    ],
+    [
+      "node",
+      64,
+      344,
+      240,
+      112,
+      "旧处理图\n拆除连接",
+      "gray",
+      27
+    ],
+    [
+      "node",
+      366,
+      344,
+      240,
+      112,
+      "保留\nSinkInput",
+      "blue",
+      28
+    ],
+    [
+      "node",
+      668,
+      344,
+      240,
+      112,
+      "适配目标\n设备 / span",
+      "blue",
+      26
+    ],
+    [
+      "node",
+      970,
+      344,
+      244,
+      112,
+      "接入新处理簇\n按状态重连",
+      "teal",
+      25
+    ],
+    [
+      "arrow",
+      316,
+      400,
+      354,
+      400
+    ],
+    [
+      "arrow",
+      618,
+      400,
+      656,
+      400
+    ],
+    [
+      "arrow",
+      920,
+      400,
+      958,
+      400
+    ],
+    [
+      "text",
+      64,
+      512,
+      1150,
+      45,
+      "迁移的不只有数据，还有设备身份、音效绑定与会话状态",
+      30,
+      "navy",
+      true
+    ],
+    [
+      "text",
+      64,
+      586,
+      1150,
+      42,
+      "缓存与音效状态按条件保留；管理成功回报还需与真实输出区分",
+      28,
+      "gray"
+    ]
+  ],
+  "minutes": 0,
+  "section": "技术附录 · A5",
+  "next": "源码版本与测量口径集中在A6。",
+  "footer": "已存在目标sink间的可移动路径；非完整蓝牙热插拔时序，不提供无缝切换保证",
+  "boundary": "迁移与设备可用性是不同层次；回报成功不等于声学切换结束。",
+  "cue": "",
+  "pacing": "按答疑问题选择展开，附录不计主讲时长。",
+  "sources": [
+    "FetchOutputDevices L966–978：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/zone/src/audio_zone_service.cpp#L966",
+    "MoveSinkInputByIndexOrName L1065–1095：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_manager.cpp#L1065",
+    "MoveStreamSync L872–916：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L872",
+    "目标Manager接入与映射更新 L1181–1227：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_manager.cpp#L1181",
+    "AddSingleNodeToSink L106–179：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L106",
+    "UPDATE_SPANSIZE 状态处理 L1157–1183：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/hpae_renderer_stream_impl.cpp#L1157"
+  ],
+  "dark": false,
+  "from": "按设备切换与节点迁移问题进入。",
+  "label": "A5"
+}

@@ -1,0 +1,68 @@
+ProcessHdiRendererPrimary / ThreadFuncWriteHDI L3821–3887：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L3821
+3821: static void ProcessHdiRendererPrimary(struct Userdata *u, pa_memchunk *pChunk)
+3822: {
+3823:     pa_usec_t now = pa_rtclock_now();
+3824:     if (pa_atomic_load(&u->primary.isHDISinkStarted) != 1 && now - u->timestampLastLog > USEC_PER_SEC) {
+3825:         u->timestampLastLog = now;
+3826:         const char *deviceClass = u->primary.sinkAdapter->deviceClass;
+3827:         AUDIO_DEBUG_LOG("HDI not started, skip RenderWrite, wait sink[%s] suspend", deviceClass);
+3828:         pa_memblock_unref(pChunk->memblock);
+3829:     } else if (pa_atomic_load(&u->primary.isHDISinkStarted) != 1) {
+3830:         pa_memblock_unref(pChunk->memblock);
+3831:     } else if (RenderWrite(u->primary.sinkAdapter, pChunk) < 0) {
+3832:         u->bytes_dropped += pChunk->length;
+3833:         AUDIO_ERR_LOG("RenderWrite failed");
+3834:     }
+3835:     if (pa_atomic_load(&u->primary.dflag) == 1) {
+3836:         pa_atomic_sub(&u->primary.dflag, 1);
+3837:     }
+3838:     u->primary.writeTime = pa_rtclock_now() - now;
+3839: }
+3840: 
+3841: static void ThreadFuncWriteHDI(void *userdata)
+3842: {
+3843:     // set audio thread priority
+3844:     ScheduleThreadInServer(getpid(), gettid());
+3845: 
+3846:     struct Userdata *u = userdata;
+3847:     CHECK_AND_RETURN_LOG(u != NULL, "u is null");
+3848: 
+3849:     int32_t quit = 0;
+3850: 
+3851:     do {
+3852:         int32_t code = 0;
+3853:         pa_memchunk chunk;
+3854: 
+3855:         CHECK_AND_RETURN_LOG(u->primary.dq != NULL, "u->primary.dq is NULL");
+3856:         pa_assert_se(pa_asyncmsgq_get(u->primary.dq, NULL, &code, NULL, NULL, &chunk, 1) == 0);
+3857: 
+3858:         int ret = 0;
+3859:         AUTO_CTRACE("hdi_sink::ThreadFuncWriteHDI code: %d", code);
+3860:         switch (code) {
+3861:             case HDI_RENDER: {
+3862:                 ProcessHdiRendererPrimary(u, &chunk);
+3863:                 break;
+3864:             }
+3865:             case HDI_STOP: {
+3866:                 if (pa_atomic_load(&u->primary.isHDISinkStarted) == 1) {
+3867:                     u->primary.sinkAdapter->SinkAdapterStop(u->primary.sinkAdapter);
+3868:                     AUDIO_INFO_LOG("Stopped HDI renderer");
+3869:                     pa_atomic_store(&u->primary.isHDISinkStarted, 0);
+3870:                 }
+3871:                 break;
+3872:             }
+3873:             case HDI_START: {
+3874:                 ret = u->primary.sinkAdapter->SinkAdapterStart(u->primary.sinkAdapter);
+3875:                 break;
+3876:             }
+3877:             case QUIT:
+3878:                 quit = 1;
+3879:                 break;
+3880:             default:
+3881:                 break;
+3882:         }
+3883:         AUTO_CTRACE("hdi_sink::ThreadFuncWriteHDI done ret: %d", ret);
+3884:         pa_asyncmsgq_done(u->primary.dq, ret);
+3885:     } while (!quit);
+3886:     UnscheduleThreadInServer(getpid(), gettid());
+3887: }

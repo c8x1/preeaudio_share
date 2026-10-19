@@ -1,0 +1,14 @@
+from author import write
+write(18,'A3  真实节点连接与拉取执行','PCM结果正向返回，输出端通过端口向前驱索取计算结果',
+'展开普通处理簇和输出簇顺序，解释Connect调用方向与拉图执行边界。',
+'''上排按PCM数据方向看普通ProcessCluster：输入到Converter，可选SessionEffect，然后LoudnessGain、Gain和场景Mixer。相关分支中Mixer后接RenderEffect。特殊场景分支没有在本图穷举。
+下排是输出侧。不同场景输出各有Converter，汇入输出Mixer，再接SinkOutput。普通输出Mixer在非工厂构建且初始化成功等条件下启用limiter，不能宣称所有路径绝不削波。当前普通场景和输出Mixer常见20毫秒处理块；SinkOutput原始提交粒度可能不同。
+Connect接口通常由后继连接前驱，所以读调用代码时不要把Connect方法的调用者顺序当成数据方向。实际计算从输出端要数据：InputPort遍历前驱输出端口，OutputPort没有现成数据时才调用节点DoProcess。已有结果可直接消费，因此不是每一轮所有节点无条件执行一次。
+SinkOutput为了凑足设备提交量，也可能多次拉取上游，再从浮点结果转换并积攒到提交缓存。前驱缓存、块长和输出提交粒度共同影响执行，不应把“20毫秒Mixer”说成全引擎每20毫秒一次的固定定时器。''',
+[['text',64,243,1150,41,'ProcessCluster（普通分支，按数据方向）',27,'blue',True],
+ ['node',64,306,166,76,'Input','gray',24],['node',258,306,166,76,'Converter','blue',22],['node',452,306,166,76,'可选会话音效','purple',22],['node',646,306,166,76,'LoudnessGain','blue',20],['node',840,306,166,76,'Gain','blue',25],['node',1034,306,180,76,'场景 Mixer','blue',24],
+ ['arrow',236,344,251,344],['arrow',430,344,445,344],['arrow',624,344,639,344],['arrow',818,344,833,344],['arrow',1012,344,1027,344],
+ ['text',64,408,1150,38,'场景Mixer后可接RenderEffect；实际请求从输出端反向拉取',26,'gray'],
+ ['text',64,477,1150,40,'OutputCluster（不同场景汇合）',27,'teal',True],
+ ['node',64,540,245,74,'场景输出','teal',26],['node',366,540,245,74,'Converter','teal',25],['node',668,540,245,74,'输出 Mixer','teal',26],['node',970,540,244,74,'SinkOutput','teal',26],['arrow',320,577,354,577,'teal'],['arrow',622,577,656,577,'teal'],['arrow',924,577,958,577,'teal']],
+ keys=['connect','nodes','outcreate','pull','pullout','stitch'],minutes=0,section='技术附录 · A3',prev='按节点次序与执行方向问题进入。',next='需要跨层控制时序时进入A4。',footer='局部对象关系，省略特殊路径；Mixer块长、共享span和设备提交粒度并不必然相同',boundary='可选音效和limiter受分支条件限制；Connect代码方向与数据方向不同。',label='A3')

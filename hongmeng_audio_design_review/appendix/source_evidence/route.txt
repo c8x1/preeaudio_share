@@ -1,0 +1,14 @@
+FetchOutputDevices L966–978：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/zone/src/audio_zone_service.cpp#L966
+966: std::vector<std::shared_ptr<AudioDeviceDescriptor>> AudioZoneService::FetchOutputDevices(int32_t zoneId,
+967:     StreamUsage streamUsage, int32_t clientUid, RouterType bypassType)
+968: {
+969:     std::vector<std::shared_ptr<AudioDeviceDescriptor>> devices;
+970:     std::lock_guard<std::mutex> lock(zoneMutex_);
+971:     auto zone = FindZone(zoneId);
+972:     CHECK_AND_RETURN_RET_LOG(zone != nullptr, devices, "zone id %{public}d is not found", zoneId);
+973:     auto res = zone->FetchOutputDevices(streamUsage, clientUid, bypassType);
+974:     JUDGE_AND_INFO_LOG(!res.empty() && res.front() != nullptr, "fetch from zone %{public}d," \
+975:         "usage:%{public}d, client:%{public}d router:%{public}d desc:%{public}s",
+976:         zoneId, streamUsage, clientUid, bypassType, res.front()->GetName().c_str());
+977:     return res;
+978: }

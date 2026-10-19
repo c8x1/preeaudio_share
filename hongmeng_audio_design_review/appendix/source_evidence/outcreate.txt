@@ -1,0 +1,17 @@
+OutputCluster 构造与limiter条件 L32–47：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_output_cluster.cpp#L32
+32: {
+33: #ifdef ENABLE_HIDUMP_DFX
+34:     SetNodeName("HpaeOutputCluster");
+35: #endif
+36:     nodeInfo.frameLen = nodeInfo.samplingRate * FRAME_LEN_20MS / MILLISECOND_PER_SECOND;
+37:     SetNodeInfo(nodeInfo);
+38:     mixerNode_ = std::make_shared<HpaeMixerNode>(nodeInfo);
+39: #ifndef CONFIG_FACTORY_VERSION
+40:     // FACTORY_VERSION cancel limiter
+41:     if (mixerNode_->SetupAudioLimiter() != SUCCESS) {
+42:         AUDIO_INFO_LOG("mixerNode SetupAudioLimiter failed!");
+43:     }
+44: #endif
+45:     hpaeSinkOutputNode_->Connect(mixerNode_);
+46:     frameLenMs_ = hpaeSinkOutputNode_->GetFrameLen() * MILLISECOND_PER_SECOND / hpaeSinkOutputNode_->GetSampleRate();
+47:     AUDIO_INFO_LOG("frameLenMs_:%{public}u ms, timeoutThdFrames_:%{public}u", frameLenMs_, timeoutThdFrames_);

@@ -1,0 +1,7 @@
+OutputCluster::DoProcess L79–84：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_output_cluster.cpp#L79
+79: void HpaeOutputCluster::DoProcess()
+80: {
+81:     Trace trace("HpaeOutputCluster::DoProcess");
+82:     hpaeSinkOutputNode_->DoProcess();
+83:     if (mixerNode_->GetPreOutNum() == 0) {
+84:         timeoutStopCount_++;

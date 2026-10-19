@@ -1,0 +1,129 @@
+{
+  "n": 6,
+  "title": "自研要改变什么，又必须守住什么",
+  "takeaway": "降低时延与开销，提高扩展性，同时承接完整系统约束",
+  "objective": "列明收益目标、不可牺牲的约束，并建立三项创新路线。",
+  "script": "自研目标现在已经明确。团队提供的结果是时延降低、性能提升、功耗降低，以及通路实现更精简、扩展性更好。这些结果需要放在系统约束下理解。\n首先是连续性。减少线程中转和Buffer时，端到端抗抖动能力需要保持。其次是行为语义。新引擎仍要服从焦点、路由和音量规则，服务层仍要维护流状态。再次是设备和场景能力，普通播放之外仍有不同类型入口和产品配置，不能用一条路径代替所有行为。\n下面按三项动作展开。线程模型精简把部分处理与提交职责集中，减少已核验的跨线程中转。无锁消息队列让常规控制请求通过原子发布和批量消费进入执行侧。节点化把转换、增益、混音和音效等职责组织成可复用单元。\n每项都用同一套顺序讲：旧结构在哪里产生交接或竞争，新结构怎样做，减少了什么，还要守住哪些条件。我们把定性结果作为团队事实呈现，把源码机制作为解释，不给没有材料支持的幅度。",
+  "elements": [
+    [
+      "text",
+      64,
+      254,
+      540,
+      45,
+      "要改善的结果",
+      32,
+      "blue",
+      true
+    ],
+    [
+      "text",
+      685,
+      254,
+      529,
+      45,
+      "必须守住的约束",
+      32,
+      "purple",
+      true
+    ],
+    [
+      "text",
+      64,
+      323,
+      540,
+      114,
+      "更低时延与功耗\n更高处理效率\n更灵活的通路扩展",
+      30,
+      "navy"
+    ],
+    [
+      "text",
+      685,
+      323,
+      529,
+      114,
+      "端到端抗抖动\n策略规则与流状态一致\n已有场景和设备能力",
+      30,
+      "navy"
+    ],
+    [
+      "line",
+      629,
+      251,
+      629,
+      467,
+      "light",
+      2
+    ],
+    [
+      "line",
+      64,
+      496,
+      1214,
+      496,
+      "light",
+      2
+    ],
+    [
+      "text",
+      64,
+      537,
+      355,
+      43,
+      "线程与 Buffer 精简",
+      29,
+      "blue",
+      true
+    ],
+    [
+      "text",
+      465,
+      537,
+      355,
+      43,
+      "无锁消息流转",
+      29,
+      "blue",
+      true
+    ],
+    [
+      "text",
+      866,
+      537,
+      348,
+      43,
+      "节点职责复用",
+      29,
+      "teal",
+      true
+    ],
+    [
+      "text",
+      64,
+      597,
+      1150,
+      41,
+      "接下来逐项解释：具体改了哪里，为什么有助于全局体验",
+      27,
+      "navy"
+    ]
+  ],
+  "minutes": 3,
+  "section": "第二部分 · 目标、约束与演进路线",
+  "next": "先看线程精简，明确旧渲染线程和HDI写线程的交接怎样变化。",
+  "footer": "目标与定性收益来自团队说明；量化幅度与测试条件待补，源码用于解释机制",
+  "boundary": "用户团队定性结论含抗抖动保持，不从结构静态证明量化收益。",
+  "cue": "",
+  "pacing": "按本页分钟数讲述：先联系场景，再解释图，最后回扣结论并转场。",
+  "sources": [
+    "GetPlaybackManager L29–64：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/i_stream_manager.cpp#L29",
+    "ActivateAudioInterrupt L818–853：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/zone/src/audio_zone_service.cpp#L818",
+    "FetchOutputDevices L966–978：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/zone/src/audio_zone_service.cpp#L966",
+    "Notify / Run L75–125：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_signal_process_thread.cpp#L75",
+    "PushRequest / HandleRequests / TryExpandQueue L57–145：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L57",
+    "ProcessCluster::Connect L206–232：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_process_cluster.cpp#L206"
+  ],
+  "dark": false,
+  "from": "刚才定位了三种结构成本。"
+}

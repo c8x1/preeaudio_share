@@ -1,0 +1,27 @@
+OutputCluster::Connect L110–135：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_output_cluster.cpp#L110
+110: void HpaeOutputCluster::Connect(const std::shared_ptr<OutputNode<HpaePcmBuffer *>> &preNode)
+111: {
+112:     HpaeNodeInfo &preNodeInfo = preNode->GetSharedInstance()->GetNodeInfo();
+113:     HpaeNodeInfo &curNodeInfo = GetNodeInfo();
+114:     HpaeProcessorType sceneType = preNodeInfo.sceneType;
+115:     AUDIO_INFO_LOG("input sceneType is %{public}u, input:[%{public}u_%{public}u], output:[%{public}u_%{public}u], "
+116:         "preNode name %{public}s, curNode name %{public}s, "
+117:         "mixer id %{public}u, SinkOut id %{public}u", preNodeInfo.sceneType,
+118:         preNodeInfo.samplingRate, preNodeInfo.channels,
+119:         curNodeInfo.samplingRate, curNodeInfo.channels,
+120:         preNodeInfo.nodeName.c_str(), curNodeInfo.nodeName.c_str(),
+121:         mixerNode_->GetNodeId(), hpaeSinkOutputNode_->GetNodeId());
+122: 
+123:     if (!SafeGetMap(sceneConverterMap_, sceneType)) {
+124:         sceneConverterMap_[sceneType] = std::make_shared<HpaeAudioFormatConverterNode>(preNodeInfo, curNodeInfo);
+125:         // disable downmix normalization in output cluster because mixer node here enables limiter
+126:         sceneConverterMap_[sceneType]->SetDownmixNormalization(false);
+127:     } else {
+128:         sceneConverterMap_.erase(sceneType);
+129:         sceneConverterMap_[sceneType] = std::make_shared<HpaeAudioFormatConverterNode>(preNodeInfo, curNodeInfo);
+130:         sceneConverterMap_[sceneType]->SetDownmixNormalization(false);
+131:     }
+132:     mixerNode_->Connect(sceneConverterMap_[sceneType]);
+133:     sceneConverterMap_[sceneType]->Connect(preNode);
+134:     connectedProcessCluster_.insert(sceneType);
+135: }

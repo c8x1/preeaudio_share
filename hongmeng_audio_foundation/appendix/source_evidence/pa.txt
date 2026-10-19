@@ -1,0 +1,58 @@
+pa_stream_write / PAStreamWriteCb L699–755：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/src/pa_renderer_stream_impl.cpp#L699
+699:     BufferDesc bufferDesc;
+700:     bufferDesc.bufLength = length;
+701:     // DequeueBuffer is called in PAStreamWriteCb which is running in mainloop, so don't need lock mainloop.
+702:     pa_stream_begin_write(paStream_, reinterpret_cast<void **>(&bufferDesc.buffer), &bufferDesc.bufLength);
+703:     return bufferDesc;
+704: }
+705: 
+706: int32_t PaRendererStreamImpl::EnqueueBuffer(const BufferDesc &bufferDesc)
+707: {
+708:     Trace trace("PaRendererStreamImpl::EnqueueBuffer " + std::to_string(bufferDesc.bufLength) + " totalBytesWritten" +
+709:         std::to_string(totalBytesWritten_));
+710:     int32_t error = 0;
+711:     if (offloadEnable_) {
+712:         error = OffloadUpdatePolicyInWrite();
+713:         CHECK_AND_RETURN_RET_LOG(error == SUCCESS, error, "OffloadUpdatePolicyInWrite failed");
+714:     }
+715: 
+716:     // EnqueueBuffer is called in mainloop in most cases and don't need lock.
+717:     PaLockGuard palock(mainloop_, 1);
+718: 
+719:     if (paStream_ == nullptr) {
+720:         AUDIO_ERR_LOG("paStream is nullptr");
+721:         return ERR_ILLEGAL_STATE;
+722:     }
+723: 
+724:     error = pa_stream_write(paStream_, static_cast<void*>(bufferDesc.buffer), bufferDesc.bufLength, nullptr,
+725:         0LL, PA_SEEK_RELATIVE);
+726:     if (error < 0) {
+727:         AUDIO_ERR_LOG("Write stream failed");
+728:         pa_stream_cancel_write(paStream_);
+729:     }
+730:     totalBytesWritten_ += bufferDesc.bufLength;
+731:     return SUCCESS;
+732: }
+733: 
+734: void PaRendererStreamImpl::PAStreamWriteCb(pa_stream *stream, size_t length, void *userdata)
+735: {
+736:     CHECK_AND_RETURN_LOG(userdata, "PAStreamWriteCb: userdata is null");
+737: 
+738:     std::weak_ptr<PaRendererStreamImpl> paRendererStreamWeakPtr;
+739:     if (rendererStreamInstanceMap_.Find(userdata, paRendererStreamWeakPtr) == false) {
+740:         AUDIO_ERR_LOG("streamImpl is nullptr");
+741:         return;
+742:     }
+743:     auto streamImpl = paRendererStreamWeakPtr.lock();
+744:     CHECK_AND_RETURN_LOG(streamImpl, "PAStreamWriteCb: userdata is null");
+745: 
+746:     Trace trace("PaRendererStreamImpl::PAStreamWriteCb sink-input:" + std::to_string(streamImpl->sinkInputIndex_) +
+747:         " length:" + std::to_string(length));
+748:     std::shared_ptr<IWriteCallback> writeCallback = streamImpl->writeCallback_.lock();
+749:     if (writeCallback != nullptr) {
+750:         writeCallback->OnWriteData(length);
+751:     } else {
+752:         AUDIO_ERR_LOG("Write callback is nullptr");
+753:     }
+754: }
+755: 

@@ -1,0 +1,27 @@
+ExtractOutputFromProcessedBuffer L815–840：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_audio_format_converter_node.cpp#L815
+815: bool HpaeAudioFormatConverterNode::ExtractOutputFromProcessedBuffer()
+816: {
+817:     if (processedFrames_ < outputFrameLen20ms_) {
+818:         AUDIO_DEBUG_LOG("NodeId %{public}d: ExtractOutput insufficient data, have=%{public}u, need=%{public}u",
+819:             GetNodeId(), processedFrames_, outputFrameLen20ms_);
+820:         return false;
+821:     }
+822:     uint32_t frames = outputFrameLen20ms_;
+823:     float *dstData = converterOutput_.GetPcmDataBuffer();
+824: 
+825:     uint32_t channels = converterOutput_.GetChannelCount();
+826:     uint32_t copySamples = frames * channels;
+827:     errno_t ret = memcpy_s(dstData, converterOutput_.Size(),
+828:         processedBuffer_.data() + static_cast<size_t>(processedReadPos_) * channels,
+829:         copySamples * sizeof(float));
+830:     if (ret != EOK) {
+831:         AUDIO_ERR_LOG("NodeId %{public}d: ExtractOutput memcpy_s failed", GetNodeId());
+832:         return false;
+833:     }
+834:     ConsumeProcessedFrames(frames, channels);
+835:     AUDIO_DEBUG_LOG("NodeId %{public}d: ExtractOutput success, remaining processedFrames=%{public}u",
+836:         GetNodeId(), processedFrames_);
+837:     return true;
+838: }
+839: 
+840: void HpaeAudioFormatConverterNode::ConsumeProcessedFrames(uint32_t frames, uint32_t stride)

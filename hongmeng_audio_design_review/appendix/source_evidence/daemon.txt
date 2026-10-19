@@ -1,0 +1,14 @@
+paDaemonThread / ohos_pa_main L261–273：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/src/audio_server.cpp#L261
+261: void *AudioServer::paDaemonThread(void *arg)
+262: {
+263:     /* Load the mandatory pulseaudio modules at start */
+264:     char *argv[] = {
+265:         (char*)"pulseaudio",
+266:     };
+267:     // set audio thread priority
+268:     ScheduleThreadInServer(getpid(), gettid());
+269:     paDaemonTid_ = static_cast<uint32_t>(gettid());
+270:     AUDIO_INFO_LOG("Calling ohos_pa_main\n");
+271:     ohos_pa_main(PA_ARG_COUNT, argv);
+272:     AUDIO_INFO_LOG("Exiting ohos_pa_main\n");
+273:     UnscheduleThreadInServer(getpid(), gettid());

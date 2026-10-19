@@ -1,0 +1,41 @@
+WriteData L1122–1161：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L1122
+1122: int32_t RendererInServer::WriteData(int8_t *inputData, size_t requestDataLen, bool wakeFutex)
+1123: {
+1124:     size_t requestDataInFrame = requestDataLen / byteSizePerFrame_;
+1125: 
+1126:     std::lock_guard lock(writeLock_);
+1127:     uint64_t currentReadFrame = audioServerBuffer_->GetCurReadFrame();
+1128:     uint64_t currentWriteFrame = audioServerBuffer_->GetCurWriteFrame();
+1129:     CHECK_AND_CALL_FUNC_RETURN_RET(spanSizeInFrame_ != 0, ERR_OPERATION_FAILED,
+1130:         HILOG_COMM_ERROR("[WriteData]invalid span size"));
+1131:     int64_t cacheCount = audioServerBuffer_->GetReadableDataFrames() / static_cast<int64_t>(spanSizeInFrame_);
+1132:     Trace trace1(traceTag_ + " OnWriteData cacheCount:" + std::to_string(cacheCount));
+1133:     if (requestDataLen == 0 || currentReadFrame + requestDataInFrame > currentWriteFrame) {
+1134:         Trace trace2(traceTag_ + " near underrun"); // RendererInServer::sessionid:100001 near underrun
+1135:         if (!offloadEnable_) {
+1136:             CHECK_AND_CALL_FUNC_RETURN_RET(currentWriteFrame >= currentReadFrame, ERR_OPERATION_FAILED,
+1137:                 HILOG_COMM_ERROR("[WriteData]invalid write and read position."));
+1138:             uint64_t dataSize = currentWriteFrame - currentReadFrame;
+1139:             AUDIO_INFO_LOG("sessionId: %{public}u OHAudioBuffer %{public}" PRIu64 "size is not enough",
+1140:                 streamIndex_, dataSize);
+1141:         }
+1142:         return ERR_OPERATION_FAILED;
+1143:     }
+1144: 
+1145:     RingBufferWrapper ringBufferDesc; // will be changed in GetReadbuffer
+1146:     int32_t ret = audioServerBuffer_->GetAllReadableBufferFromPosFrame(currentReadFrame, ringBufferDesc);
+1147:     CHECK_AND_CALL_FUNC_RETURN_RET(ret == SUCCESS, ERR_OPERATION_FAILED,
+1148:         HILOG_COMM_ERROR("[WriteData]WriteData GetReadbuffer failed"));
+1149:     CHECK_AND_CALL_FUNC_RETURN_RET(ringBufferDesc.dataLength >= requestDataLen, ERR_INVALID_PARAM,
+1150:         HILOG_COMM_ERROR("[WriteData]data not enouth"));
+1151: 
+1152:     ringBufferDesc.dataLength = requestDataLen;
+1153:     ProcessFadeOutIfNeeded(ringBufferDesc, currentReadFrame, currentWriteFrame, requestDataInFrame);
+1154:     CopyDataToInputBuffer(inputData, requestDataLen, ringBufferDesc);
+1155:     ringBufferDesc.SetBuffersValueWithSpecifyDataLen(0); // clear is needed for reuse.
+1156:     uint64_t nextReadFrame = currentReadFrame + requestDataInFrame;
+1157:     audioServerBuffer_->SetCurReadFrame(nextReadFrame, wakeFutex);
+1158: 
+1159:     return SUCCESS;
+1160: }
+1161: 

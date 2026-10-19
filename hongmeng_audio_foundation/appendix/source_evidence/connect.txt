@@ -1,0 +1,28 @@
+ProcessCluster::Connect L206–232：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_process_cluster.cpp#L206
+206: void HpaeProcessCluster::Connect(const std::shared_ptr<OutputNode<HpaePcmBuffer *>> &preNode)
+207: {
+208:     HpaeNodeInfo &preNodeInfo = preNode->GetNodeInfo();
+209:     uint32_t sessionId = preNodeInfo.sessionId;
+210:     AUDIO_INFO_LOG("sessionId is %{public}u, streamType is %{public}d, sceneType is %{public}d, "
+211:         "rate is %{public}u, ch is %{public}u, "
+212:         "preNodeId %{public}u, preNodeName is %{public}s",
+213:         preNodeInfo.sessionId, preNodeInfo.streamType, preNodeInfo.sceneType,
+214:         preNodeInfo.customSampleRate == 0 ? preNodeInfo.samplingRate : preNodeInfo.customSampleRate,
+215:         preNodeInfo.channels, preNodeInfo.nodeId, preNodeInfo.nodeName.c_str());
+216:     
+217:     ConnectMixerNode();
+218:     mixerNode_->Connect(idGainMap_[sessionId]);
+219:     idGainMap_[sessionId]->Connect(idLoudnessGainNodeMap_[sessionId]);
+220:     auto seNode = SafeGetMap(idSessionEffectMap_, sessionId);
+221:     if (seNode) {
+222:         idLoudnessGainNodeMap_[sessionId]->Connect(seNode);
+223:         // SE→converter persists across DisConnect/Connect, no need to reconnect
+224:     } else {
+225:         idLoudnessGainNodeMap_[sessionId]->Connect(idConverterMap_[sessionId]);
+226:     }
+227:     idConverterMap_[sessionId]->Connect(preNode);
+228:     // update mixer node info
+229:     HpaeNodeInfo tmpNodeinfo = mixerNode_->GetNodeInfo();
+230:     tmpNodeinfo.streamType = preNodeInfo.streamType;
+231:     tmpNodeinfo.effectInfo.streamUsage = preNodeInfo.effectInfo.streamUsage;
+232:     mixerNode_->SetNodeInfo(tmpNodeinfo);

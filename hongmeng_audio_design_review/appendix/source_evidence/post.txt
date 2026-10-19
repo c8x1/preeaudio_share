@@ -1,0 +1,30 @@
+ProcessRenderUseTiming L2449–2477：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L2449
+2449: static void ProcessRenderUseTiming(struct Userdata *u, pa_usec_t now)
+2450: {
+2451:     CHECK_AND_RETURN_LOG(u != NULL, "u is null");
+2452: 
+2453:     // Fill the buffer up the latency size
+2454:     pa_memchunk chunk;
+2455: 
+2456:     AUTO_CTRACE("hdi_sink::SinkRenderPrimary");
+2457:     // Change from pa_sink_render to pa_sink_render_full for alignment issue in 3516
+2458: 
+2459:     if (!strcmp(u->sink->name, DP_SINK_NAME) && u->render_full_enable) {
+2460:         // dp update volume
+2461:         SetSinkVolumeByDeviceClass(u->sink, u->primary.sinkAdapter->deviceClass);
+2462:         pa_sink_render_full(u->sink, u->sink->thread_info.max_request, &chunk); // only work for dp-96k-8ch
+2463:         UnsetSinkVolume(u->sink); // reset volume 1.0f
+2464:     } else {
+2465:         if (u->isEffectBufferAllocated || AllocateEffectBuffer(u)) {
+2466:             u->isEffectBufferAllocated = true;
+2467:             // limiter process only in normal render
+2468:             CreateLimiter(u);
+2469:             SinkRenderPrimary(u->sink, u->sink->thread_info.max_request, &chunk);
+2470:         }
+2471:     }
+2472:     pa_assert(chunk.length > 0);
+2473: 
+2474:     StartPrimaryHdiIfRunning(u);
+2475:     pa_asyncmsgq_post(u->primary.dq, NULL, HDI_RENDER, NULL, 0, &chunk, NULL);
+2476:     u->primary.timestamp += pa_bytes_to_usec(chunk.length, &u->sink->sample_spec);
+2477: }

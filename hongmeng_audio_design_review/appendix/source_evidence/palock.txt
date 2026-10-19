@@ -1,0 +1,40 @@
+PaLockGuard L25–63：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/include/pa_adapter_tools.h#L25
+25: class PaLockGuard {
+26: public:
+27:     PaLockGuard(pa_threaded_mainloop *mainloop, bool mainloopCheck = false) : mainloop_(mainloop)
+28:     {
+29:         if (mainloopCheck) {
+30:             isInMainloop_ = pa_threaded_mainloop_in_thread(mainloop_) ? true : false;
+31:         } else {
+32:             isInMainloop_ = false;
+33:         }
+34:         if (!isInMainloop_) {
+35:             pa_threaded_mainloop_lock(mainloop_);
+36:         }
+37:     }
+38: 
+39:     ~PaLockGuard()
+40:     {
+41:         Unlock();
+42:     }
+43: 
+44:     void Unlock()
+45:     {
+46:         if (!isInMainloop_ && !isUnlocked_) {
+47:             pa_threaded_mainloop_unlock(mainloop_);
+48:             isUnlocked_ = true;
+49:         }
+50:     }
+51: 
+52:     void Relock()
+53:     {
+54:         if (!isInMainloop_ && isUnlocked_) {
+55:             isUnlocked_ = false;
+56:             pa_threaded_mainloop_lock(mainloop_);
+57:         }
+58:     }
+59: private:
+60:     bool isUnlocked_ = false;
+61:     bool isInMainloop_ = false;
+62:     pa_threaded_mainloop *mainloop_ = nullptr;
+63: };

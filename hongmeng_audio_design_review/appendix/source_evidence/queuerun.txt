@@ -1,0 +1,37 @@
+ProcessRequests 批量执行 L227–262：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L227
+227: void HpaeNoLockQueue::ProcessRequests(uint64_t requestHeadIndex, bool isProcess)
+228: {
+229:     if (tempRequestQueue_.capacity() < requestCount_.load()) {
+230:         tempRequestQueue_.reserve(requestCount_.load());
+231:     }
+232:     uint64_t tempIndex = requestHeadIndex;
+233:     size_t requestCount = 0;
+234:     while (GetRequestIndex(tempIndex) != INVALID_REQUEST_ID) {
+235:         RequestNode *tempRequest = GetRequestNodePtr(tempIndex);
+236:         CHECK_AND_BREAK_LOG(tempRequest != nullptr, "tempRequest is nullptr");
+237:         uint64_t nextRequest = tempRequest->nextRequestIndex;
+238:         tempRequestQueue_.emplace_back(std::move(tempRequest->request));
+239:         tempRequest->request = nullptr;
+240:         PushRequestNode(&freeRequestHeadIndex_, tempIndex);
+241:         tempIndex = nextRequest;
+242:         requestCount++;
+243:     }
+244:     if (requestCount > 0) {
+245:         usedRequestCount_.fetch_sub(requestCount);
+246:     }
+247: 
+248:     if (isProcess) {
+249:         for (std::vector<Request>::reverse_iterator requestIter = tempRequestQueue_.rbegin();
+250:              requestIter != tempRequestQueue_.rend();
+251:              ++requestIter) {
+252:             if (*requestIter != nullptr) {
+253:                 (*requestIter)();
+254:             }
+255:         }
+256:     }
+257:     tempRequestQueue_.clear();
+258: }
+259: 
+260: bool HpaeNoLockQueue::IsFinishProcess()
+261: {
+262:     return GetRequestIndex(requestHeadIndex_) == INVALID_REQUEST_ID;

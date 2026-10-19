@@ -1,0 +1,37 @@
+ActivateAudioInterrupt L818–853：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/zone/src/audio_zone_service.cpp#L818
+818: AudioInterruptResult AudioZoneService::ActivateAudioInterrupt(int32_t zoneId,
+819:     const AudioInterrupt &audioInterrupt, bool isUpdatedAudioStrategy)
+820:     
+821: {
+822:     AudioInterruptResult result;
+823:     result.retCode = ERROR;
+824:     bool isRecord = audioInterrupt.audioFocusType.sourceType != SOURCE_TYPE_INVALID;
+825:     std::shared_ptr<AudioInterruptService> tmp = nullptr;
+826:     {
+827:         JUDGE_AND_INFO_LOG(zoneId != 0, "active interrupt of zone %{public}d", zoneId);
+828:         std::lock_guard<std::mutex> lock(zoneMutex_);
+829:         CHECK_AND_CALL_FUNC_RETURN_RET_REPORT(zoneClientManager_ != nullptr && interruptService_ != nullptr, result,
+830:             StreamDfxManager::GetInstance().SendAudioErrorEvent(audioInterrupt.uid,
+831:                 isRecord ? RECORD_INTERRUPT_START_NULL_POINTER : INTERRUPT_START_NULL_POINTER,
+832:                 "zoneClientManager or interruptService is nullptr", false),
+833:             HILOG_COMM_ERROR("[ActivateAudioInterrupt]zoneClientManager or interruptService is nullptr"));
+834:         CHECK_AND_CALL_FUNC_RETURN_RET_REPORT(CheckIsZoneValid(zoneId), result,
+835:             StreamDfxManager::GetInstance().SendAudioErrorEvent(audioInterrupt.uid,
+836:                 isRecord ? RECORD_INTERRUPT_START_INVALID_PARAM : INTERRUPT_START_INVALID_PARAM,
+837:                 "zone id is not valid", false),
+838:             HILOG_COMM_ERROR("[ActivateAudioInterrupt]zone id %{public}d is not valid", zoneId));
+839:         tmp = interruptService_;
+840:     }
+841: 
+842:     CHECK_AND_CALL_FUNC_RETURN_RET_REPORT(tmp != nullptr, result,
+843:         StreamDfxManager::GetInstance().SendAudioErrorEvent(audioInterrupt.uid,
+844:             isRecord ? RECORD_INTERRUPT_START_NULL_POINTER : INTERRUPT_START_NULL_POINTER,
+845:             "interruptService_ tmp is nullptr", false),
+846:         HILOG_COMM_ERROR("[ActivateAudioInterrupt]interruptService_ tmp is nullptr"));
+847:     
+848:     auto reporters = AudioZoneInterruptReporter::CreateReporter(zoneId,
+849:         tmp, zoneClientManager_,
+850:         AudioZoneInterruptReason::REMOTE_INJECT);
+851:     result = tmp->ActivateAudioInterrupt(zoneId, audioInterrupt,
+852:         isUpdatedAudioStrategy);
+853:     for (auto &report : reporters) {

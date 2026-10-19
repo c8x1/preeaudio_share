@@ -1,0 +1,132 @@
+{
+  "n": 12,
+  "title": "回到全局：策略驱动，执行侧协同落实",
+  "takeaway": "三项创新服务于系统行为，最终仍要在应用与设备变化中兑现",
+  "objective": "重新连接开场场景和各层，说明自研机制怎样承接策略而非孤立优化。",
+  "script": "回到开场。音乐播放、游戏加入、提醒出现、切到耳机，仍然是同一组动作。现在我们可以把系统决定与执行机制放在一起。\n策略根据焦点、会话、设备和音量规则决定行为，也可能通知相关应用处理中断或闪避。流服务协调启动条件、状态与共享缓冲；引擎接收适用的管理请求，更新节点与处理通路；设备适配把结果交给目标输出。图表示职责协作，中间IPC和异步回程有折叠，不能读成单一同步时序。\n当允许的新流加入，节点组合让已有转换、增益、混音职责继续复用。当需要启动或调整连接，相关管理请求通过队列交给执行侧处理。当处理图需要向设备供数，精简后的线程调用链减少已核验的交接边界。\n切换目标设备时，同样不能只关注最后一次RenderFrame。普通可移动会话会保留SinkInput，拆旧连接，更新设备及span，按状态重连处理簇。服务与设备侧还必须保持资源和状态一致。每个层面都可能影响最终体验。\n因此，策略做出正确决定是前提，服务把生命周期和条件协调好，引擎高效执行，设备侧按约输出，才能让用户感到整个系统反应合理。后面评价收益，也必须同时观察引擎局部与端到端结果。",
+  "elements": [
+    [
+      "text",
+      64,
+      247,
+      1150,
+      42,
+      "音乐播放      游戏加入      提醒出现      切到耳机",
+      30,
+      "navy",
+      true
+    ],
+    [
+      "node",
+      64,
+      330,
+      1150,
+      73,
+      "策略：焦点 / 并发 / 路由 / 音量，以及对应用的行为通知",
+      "purple",
+      28
+    ],
+    [
+      "arrow",
+      214,
+      414,
+      214,
+      455,
+      "purple",
+      true
+    ],
+    [
+      "arrow",
+      664,
+      414,
+      664,
+      455,
+      "purple",
+      true
+    ],
+    [
+      "arrow",
+      1094,
+      414,
+      1094,
+      455,
+      "purple",
+      true
+    ],
+    [
+      "node",
+      64,
+      468,
+      300,
+      100,
+      "流服务\n启动条件 / 状态 / 缓冲",
+      "navy",
+      24
+    ],
+    [
+      "node",
+      450,
+      468,
+      430,
+      100,
+      "引擎执行\n消息请求 / 节点通路 / 持续提交",
+      "blue",
+      24
+    ],
+    [
+      "node",
+      966,
+      468,
+      248,
+      100,
+      "设备适配\n目标输出",
+      "teal",
+      27
+    ],
+    [
+      "arrow",
+      376,
+      518,
+      438,
+      518
+    ],
+    [
+      "arrow",
+      892,
+      518,
+      954,
+      518
+    ],
+    [
+      "text",
+      64,
+      607,
+      1150,
+      40,
+      "局部执行效率，要放回正确的系统行为和输出结果中评价",
+      29,
+      "blue",
+      true
+    ]
+  ],
+  "minutes": 4,
+  "section": "第三部分 · 三项创新回到系统协同",
+  "next": "评价收益时，局部改进与端到端效果应该怎样关联？",
+  "footer": "职责关系示意，控制链与异步回程有折叠；不预设游戏、提醒和耳机切换的统一策略结果",
+  "boundary": "不把策略的直接影响理解为全都同步直调引擎，设备迁移限定可移动路径。",
+  "cue": "",
+  "pacing": "按本页分钟数讲述：先联系场景，再解释图，最后回扣结论并转场。",
+  "sources": [
+    "ActivateAudioInterrupt L818–853：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/zone/src/audio_zone_service.cpp#L818",
+    "FetchOutputDevices L966–978：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/zone/src/audio_zone_service.cpp#L966",
+    "SetSystemVolumeLevel L720–734：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/zone/src/audio_zone_service.cpp#L720",
+    "StartInner L1576–1606：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L1576",
+    "SendRequest L1755–1770：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1755",
+    "ProcessCluster::Connect L206–232：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_process_cluster.cpp#L206",
+    "MoveSinkInputByIndexOrName L1065–1095：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_manager.cpp#L1065",
+    "AddSingleNodeToSink L106–179：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L106",
+    "SinkOutput::DoProcess / RenderFrame L121–165：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L121"
+  ],
+  "dark": false,
+  "from": "已经讲完线程/Buffer、消息队列与节点复用。"
+}

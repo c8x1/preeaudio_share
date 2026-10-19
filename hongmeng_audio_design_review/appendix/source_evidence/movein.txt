@@ -1,0 +1,48 @@
+目标Manager接入与映射更新 L1181–1227：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_manager.cpp#L1181
+1181: void HpaeManager::HandleMoveSinkInput(const std::shared_ptr<HpaeSinkInputNode> sinkInputNode, std::string sinkName)
+1182: {
+1183:     uint32_t sessionId = sinkInputNode->GetNodeInfo().sessionId;
+1184:     AUDIO_INFO_LOG("handle move session:%{public}u to new sink:%{public}s",
+1185:         sessionId, GetEncryptStr(sinkName).c_str());
+1186:     if (MovingSinkStateChange(sessionId, sinkInputNode)) {
+1187:         return;
+1188:     }
+1189:     std::shared_ptr<IHpaeRendererManager> rendererManager = GetRendererManagerByName(sinkName);
+1190:     if (rendererManager == nullptr) {
+1191:         AUDIO_ERR_LOG("handle move session:%{public}u failed,can not find sink by name:%{public}s",
+1192:             sessionId, GetEncryptStr(sinkName).c_str());
+1193:         if (auto serviceCallback = serviceCallback_.lock()) {
+1194:             serviceCallback->OnMoveSinkInputByIndexOrNameCb(ERROR_INVALID_PARAM);
+1195:         }
+1196:         return;
+1197:     }
+1198:     // Deferred AISS-disable: if AISS was closed while this stream was moving, the migrating node
+1199:     // still carries the old attach-state and would re-materialize AISS once connected to the new
+1200:     // sink (within the 3s lazy-release window). Drop it when the logical binding no longer points
+1201:     // at this session. A pure move keeps the binding, so the attach-state is preserved.
+1202:     if (sessionEffectManager_ != nullptr && sinkInputNode->HasSessionEffectAttachState() &&
+1203:         sessionEffectManager_->GetBoundSessionId(AUDIO_AISS_ENHANCE_EFFECT_NAME) != sessionId) {
+1204:         sinkInputNode->ClearSessionEffectAttachState();
+1205:     }
+1206:     rendererManager->AddNodeToSink(sinkInputNode);
+1207:     // MoveIn: recreate SE on new device if session has active SE binding
+1208:     auto boundSessionId = sessionEffectManager_->GetBoundSessionId(AUDIO_AISS_ENHANCE_EFFECT_NAME);
+1209:     if (boundSessionId == sessionId) {
+1210:         AudioEffectConfig config = MakeAissAudioConfig();
+1211:         std::shared_ptr<EffectInstance> instance;
+1212:         sessionEffectManager_->BindSessionEffect(sessionId, AUDIO_AISS_ENHANCE_EFFECT_NAME, config, instance);
+1213:         if (instance != nullptr) {
+1214:             rendererManager->PostCreateSessionEffect(sessionId, AUDIO_AISS_ENHANCE_EFFECT_NAME, instance, config);
+1215:         }
+1216:     }
+1217:     rendererIdSinkNameMap_[sessionId] = sinkName;
+1218:     rendererIdStreamInfoMap_[sessionId].streamInfo.deviceName = sinkName;
+1219:     idPreferSinkNameMap_[sessionId] = sinkName;
+1220:     if (sinkInputs_.find(sessionId) != sinkInputs_.end()) {
+1221:         sinkInputs_[sessionId].deviceSinkId = sinkNameSinkIdMap_[sinkName];
+1222:         sinkInputs_[sessionId].sinkName = sinkName;
+1223:     }
+1224:     if (auto serviceCallback = serviceCallback_.lock()) {
+1225:         serviceCallback->OnMoveSinkInputByIndexOrNameCb(SUCCESS);
+1226:     }
+1227: }

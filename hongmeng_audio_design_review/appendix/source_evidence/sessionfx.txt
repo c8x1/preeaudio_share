@@ -1,0 +1,37 @@
+CreateSessionEffectNode L547–582：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_process_cluster.cpp#L547
+547: int32_t HpaeProcessCluster::CreateSessionEffectNode(uint32_t sessionId, const std::string &effectName,
+548:     std::shared_ptr<IEffectInstance> instance, const AudioEffectConfig &config,
+549:     bool aissSwitchEnabled)
+550: {
+551:     if (SafeGetMap(idSessionEffectMap_, sessionId) != nullptr) {
+552:         AUDIO_WARNING_LOG("sessionId %{public}u already has session effect node", sessionId);
+553:         return static_cast<int32_t>(SessionEffectErrCode::ERR_SESSION_ALREADY_BOUND);
+554:     }
+555:     auto converterNode = SafeGetMap(idConverterMap_, sessionId);
+556:     auto loudnessGainNode = SafeGetMap(idLoudnessGainNodeMap_, sessionId);
+557:     if (converterNode == nullptr || loudnessGainNode == nullptr) {
+558:         AUDIO_WARNING_LOG("sessionId %{public}u converter or loudnessGain node not found", sessionId);
+559:         return static_cast<int32_t>(SessionEffectErrCode::ERR_SESSION_NOT_FOUND);
+560:     }
+561: 
+562:     HpaeNodeInfo nodeInfo = converterNode->GetNodeInfo();
+563:     auto sessionEffectNode = std::make_shared<HpaeSessionEffectNode>(nodeInfo);
+564: 
+565:     int32_t ret = sessionEffectNode->CreateEffectWithInstance(effectName, instance, config, aissSwitchEnabled);
+566:     if (ret != 0) {
+567:         AUDIO_WARNING_LOG("sessionId %{public}u create effect failed, ret=%{public}d", sessionId, ret);
+568:         return ret;
+569:     }
+570: 
+571:     // Insert between ConverterNode and LoudnessGainNode:
+572:     // Original: ConverterNode <- LoudnessGainNode
+573:     // After:    ConverterNode <- SessionEffectNode <- LoudnessGainNode
+574:     loudnessGainNode->DisConnect(converterNode);
+575:     sessionEffectNode->Connect(converterNode);
+576:     loudnessGainNode->Connect(sessionEffectNode);
+577: 
+578:     idSessionEffectMap_[sessionId] = sessionEffectNode;
+579:     AUDIO_INFO_LOG("sessionId %{public}u session effect node created, effect=%{public}s",
+580:         sessionId, effectName.c_str());
+581:     return 0;
+582: }

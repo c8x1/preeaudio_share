@@ -1,0 +1,28 @@
+MoveSinkInputByIndexOrName L447–473：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/audioadapter/src/pulse_audio_service_adapter_impl.cpp#L447
+447: int32_t PulseAudioServiceAdapterImpl::MoveSinkInputByIndexOrName(uint32_t sinkInputId, uint32_t sinkIndex,
+448:     std::string sinkName)
+449: {
+450:     AudioXCollie audioXCollie("PulseAudioServiceAdapterImpl::MoveSinkInputByIndexOrName", PA_SERVICE_IMPL_TIMEOUT,
+451:         [](void *) {
+452:             AUDIO_ERR_LOG("MoveSinkInputByIndexOrName timeout");
+453:         }, nullptr, AUDIO_XCOLLIE_FLAG_LOG | AUDIO_XCOLLIE_FLAG_RECOVERY);
+454:     lock_guard<mutex> lock(lock_);
+455:     Trace trace("PulseAudioServiceAdapterImpl::MoveSinkInputByIndexOrName:id:" + std::to_string(sinkInputId) +
+456:         +":index:" + std::to_string(sinkIndex) + ":name:" + sinkName);
+457: 
+458:     unique_ptr<UserData> userData = make_unique<UserData>();
+459:     userData->thiz = this;
+460: 
+461:     CHECK_AND_RETURN_RET_LOG(mContext != nullptr, ERROR, "mContext is nullptr");
+462:     PaLockGuard palock(mMainLoop);
+463:     pa_operation *operation = nullptr;
+464:     if (sinkName.empty()) {
+465:         operation = pa_context_move_sink_input_by_index(mContext, sinkInputId, sinkIndex,
+466:             PulseAudioServiceAdapterImpl::PaMoveSinkInputCb, reinterpret_cast<void *>(userData.get()));
+467:     } else {
+468:         operation = pa_context_move_sink_input_by_name(mContext, sinkInputId, sinkName.c_str(),
+469:             PulseAudioServiceAdapterImpl::PaMoveSinkInputCb, reinterpret_cast<void *>(userData.get()));
+470:     }
+471: 
+472:     if (operation == nullptr) {
+473:         AUDIO_ERR_LOG("pa_context_get_sink_input_info_list nullptr");

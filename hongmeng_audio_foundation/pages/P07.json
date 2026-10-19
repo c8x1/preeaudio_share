@@ -1,0 +1,183 @@
+{
+  "n": 7,
+  "title": "线程精简：减少执行环节之间的交接",
+  "takeaway": "旧渲染侧把数据交给写线程，当前处理线程拉图后直接提交",
+  "objective": "用固定源码指出具体合并的职责和移除的跨线程交接，解释调度影响。",
+  "script": "这里回答最具体的问题：精简了哪些线程职责？看5.1普通主输出。ProcessRenderUseTiming在渲染侧生成chunk，再向primary.dq投递HDI_RENDER。独立ThreadFuncWriteHDI阻塞取队列消息，收到chunk后调用ProcessHdiRendererPrimary，最终RenderWrite提交设备。这是数据生产与设备写入分开执行的边界。\n当前HPAE的HpaeSignalProcessThread循环先HandleMsg再Process。RendererManager::Process在状态等条件满足时进入OutputCluster::DoProcess，再调用SinkOutput::DoProcess。SinkOutput按输出需求拉取上游处理结果，随后在同一调用链直接调用audioRendererSink_->RenderFrame。\n因此，可以从实现确认：旧模块普通渲染到独立HDI写线程的这段交接，在当前引擎处理调用链中集中执行。声音不再经过上述primary.dq转交。这让减少排队、唤醒、调度与中转缓存成为可能，而不是只把线程名称改短。\n这种集中也要求同一执行链承担处理和提交预算。设备写入可能等待，下游驱动内部可能还有线程，系统还有策略与服务线程。我们不把局部线程职责合并扩大成“音频系统只剩一个线程”。下一页讨论减少中转Buffer时，为什么还要认真保留抗抖动所需余量。",
+  "elements": [
+    [
+      "text",
+      64,
+      245,
+      1150,
+      40,
+      "5.1 普通主输出：跨线程交接",
+      28,
+      "purple",
+      true
+    ],
+    [
+      "node",
+      64,
+      304,
+      338,
+      83,
+      "渲染线程\n生成 chunk",
+      "purple",
+      26
+    ],
+    [
+      "node",
+      495,
+      304,
+      285,
+      83,
+      "primary.dq\n交接队列",
+      "gray",
+      25
+    ],
+    [
+      "node",
+      873,
+      304,
+      341,
+      83,
+      "HDI 写线程\n消费并提交",
+      "purple",
+      26
+    ],
+    [
+      "arrow",
+      414,
+      345,
+      483,
+      345,
+      "purple"
+    ],
+    [
+      "arrow",
+      792,
+      345,
+      861,
+      345,
+      "purple"
+    ],
+    [
+      "text",
+      64,
+      430,
+      1150,
+      40,
+      "当前 HPAE：处理线程内拉图并提交",
+      28,
+      "blue",
+      true
+    ],
+    [
+      "rect",
+      64,
+      486,
+      1150,
+      85,
+      "none",
+      "blue",
+      2
+    ],
+    [
+      "text",
+      77,
+      502,
+      259,
+      50,
+      "Process",
+      28,
+      "blue",
+      true,
+      "center"
+    ],
+    [
+      "text",
+      361,
+      502,
+      259,
+      50,
+      "OutputCluster",
+      27,
+      "blue",
+      true,
+      "center"
+    ],
+    [
+      "text",
+      645,
+      502,
+      259,
+      50,
+      "SinkOutput",
+      28,
+      "blue",
+      true,
+      "center"
+    ],
+    [
+      "text",
+      929,
+      502,
+      272,
+      50,
+      "RenderFrame",
+      27,
+      "blue",
+      true,
+      "center"
+    ],
+    [
+      "arrow",
+      338,
+      527,
+      359,
+      527
+    ],
+    [
+      "arrow",
+      622,
+      527,
+      643,
+      527
+    ],
+    [
+      "arrow",
+      906,
+      527,
+      927,
+      527
+    ],
+    [
+      "text",
+      64,
+      608,
+      1150,
+      40,
+      "减少跨线程中转，有助于降低排队、唤醒与调度开销",
+      26,
+      "navy"
+    ]
+  ],
+  "minutes": 4,
+  "section": "第三部分 · 创新一：线程与 Buffer",
+  "next": "中转少了，Buffer也能减少；怎样同时保持端到端抗抖动？",
+  "footer": "限定普通主输出的引擎侧边界；RenderFrame下游可能有等待与线程，不能推断整机线程总数",
+  "boundary": "同一调用链仅指引擎到RenderFrame调用；没有测量固定耗时或全局线程数。",
+  "cue": "",
+  "pacing": "按本页分钟数讲述：先联系场景，再解释图，最后回扣结论并转场。",
+  "sources": [
+    "ProcessRenderUseTiming L2449–2477：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L2449",
+    "ProcessHdiRendererPrimary / ThreadFuncWriteHDI L3821–3887：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L3821",
+    "Notify / Run L75–125：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_signal_process_thread.cpp#L75",
+    "Process L1640–1664：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1640",
+    "OutputCluster::DoProcess L79–84：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_output_cluster.cpp#L79",
+    "SinkOutput::DoProcess / RenderFrame L121–165：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L121"
+  ],
+  "dark": false,
+  "from": "已建立自研目标与系统约束。"
+}

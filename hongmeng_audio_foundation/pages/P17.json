@@ -1,0 +1,119 @@
+{
+  "n": 17,
+  "title": "A2  无锁队列的常规路径与慢路径",
+  "takeaway": "原子发布和批次摘取，不等于扩容、通知与任务执行都无锁",
+  "objective": "展开队列容量、原子并发、批次次序、扩容和耗尽行为。",
+  "script": "队列初始1000个请求节点，90%占用阈值触发扩容，每次增加1000，上限5000。初始节点数组和临时请求向量预分配，但这不是全生命周期不分配的保证。\n常规PushRequest先从空闲链取节点，将任务移入节点，再通过CAS更新请求头。HandleRequests用原子比较交换摘走当前链；ProcessRequests收集当前批次，再反向遍历恢复该批次发布次序，逐个执行任务。回收请求节点供后续使用。并发生产者的顺序以实际原子发布关系为准，不给外部业务额外的全局时间排序保证。\n慢路径TryExpandQueue使用expandMutex_，并分配新的RequestNode数组。达到上限且没有空节点时会丢弃本次请求并报告异常。ProcessRequests的临时vector容量不足也可能reserve；任务本身是std::function，不能声称捕获内容与任务执行没有额外成本。\n线程的Notify和条件等待也有锁。无锁队列的价值在于常规队列发布和摘取不用一把队列互斥锁覆盖，而不是承诺整个引擎无锁、无等待或硬实时。Run先HandleMsg再Process，没有统一10毫秒tick；实际节奏还受欠载分支和设备提交影响。",
+  "elements": [
+    [
+      "node",
+      64,
+      292,
+      240,
+      87,
+      "取得空闲节点",
+      "blue",
+      26
+    ],
+    [
+      "node",
+      366,
+      292,
+      240,
+      87,
+      "写入请求",
+      "blue",
+      27
+    ],
+    [
+      "node",
+      668,
+      292,
+      240,
+      87,
+      "CAS 发布",
+      "blue",
+      27
+    ],
+    [
+      "node",
+      970,
+      292,
+      244,
+      87,
+      "原子摘取批次\n随后依次执行",
+      "teal",
+      24
+    ],
+    [
+      "arrow",
+      316,
+      335,
+      354,
+      335
+    ],
+    [
+      "arrow",
+      618,
+      335,
+      656,
+      335
+    ],
+    [
+      "arrow",
+      920,
+      335,
+      958,
+      335
+    ],
+    [
+      "text",
+      64,
+      437,
+      1150,
+      45,
+      "初始 1000  /  90% 阈值扩容  /  上限 5000",
+      34,
+      "navy",
+      true
+    ],
+    [
+      "text",
+      64,
+      511,
+      1150,
+      43,
+      "扩容：加锁、分配；耗尽：丢请求并报告",
+      30,
+      "purple",
+      true
+    ],
+    [
+      "text",
+      64,
+      584,
+      1150,
+      43,
+      "任务执行、通知、等待和临时容器仍有各自开销",
+      29,
+      "gray"
+    ]
+  ],
+  "minutes": 0,
+  "section": "技术附录 · A2",
+  "next": "需要真实节点图时进入A3。",
+  "footer": "数字是当前固定源码队列配置，不是性能指标；批次次序不代表外部业务全局总序",
+  "boundary": "不作全链无锁、无分配、硬实时或必不丢请求的保证。",
+  "cue": "",
+  "pacing": "按答疑问题选择展开，附录不计主讲时长。",
+  "sources": [
+    "队列容量与扩容阈值 L28–38：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.h#L28",
+    "PushRequest / HandleRequests / TryExpandQueue L57–145：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L57",
+    "PushRequestNode 原子发布 L172–191：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L172",
+    "ProcessRequests 批量执行 L227–262：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L227",
+    "Notify / Run L75–125：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_signal_process_thread.cpp#L75"
+  ],
+  "dark": false,
+  "from": "按消息并发问题进入。",
+  "label": "A2"
+}

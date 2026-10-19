@@ -1,0 +1,28 @@
+UPDATE_SPANSIZE 状态处理 L1157–1183：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/hpae_renderer_stream_impl.cpp#L1157
+1157: void HpaeRendererStreamImpl::OnStatusUpdate(IOperation operation, uint32_t streamIndex)
+1158: {
+1159:     if (operation == OPERATION_UPDATE_SPANSIZE) {
+1160:         uint32_t spanSizeInFrame = 0;
+1161:         int32_t ret = IHpaeManager::GetHpaeManager().GetStreamSpanSize(HPAE_STREAM_CLASS_TYPE_PLAY,
+1162:             processConfig_.originalSessionId, spanSizeInFrame);
+1163:         CHECK_AND_RETURN_LOG(ret == SUCCESS, "GetStreamSpanSize failed:%{public}d", ret);
+1164:         uint32_t routeFlag = 0;
+1165:         ret = IHpaeManager::GetHpaeManager().GetStreamRouteFlag(HPAE_STREAM_CLASS_TYPE_PLAY,
+1166:             processConfig_.originalSessionId, routeFlag);
+1167:         if (ret == SUCCESS) {
+1168:             routeFlag_.store(routeFlag);
+1169:         }
+1170:         AUDIO_INFO_LOG("OnStatusUpdate recv span update, streamIndex:%{public}u sessionId:%{public}u span:%{public}u "
+1171:             "routeFlag:%{public}u", streamIndex_, processConfig_.originalSessionId, spanSizeInFrame, routeFlag);
+1172:         ret = UpdateSpanSize(spanSizeInFrame);
+1173:         CHECK_AND_RETURN_LOG(ret == SUCCESS, "UpdateSpanSize failed:%{public}d", ret);
+1174:     }
+1175:     // Disarm the first-frame fallback before forwarding lifecycle teardown, so any
+1176:     // residual OnStreamData arriving after Pause/Stop/Release cannot fire it.
+1177:     if (operation == OPERATION_PAUSED || operation == OPERATION_STOPPED ||
+1178:         operation == OPERATION_RELEASED) {
+1179:         firstFramePending_.store(false);
+1180:     }
+1181:     auto statusCallback = statusCallback_.lock();
+1182:     if (statusCallback) {
+1183:         statusCallback->OnStatusUpdate(operation);

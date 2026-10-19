@@ -1,0 +1,19 @@
+STARTED 状态回程 L411–428：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L411
+411: void RendererInServer::OnStatusUpdate(IOperation operation)
+412: {
+413:     if (operation != OPERATION_UNDERFLOW) {
+414:         HILOG_COMM_INFO("[OnStatusUpdate]%{public}u recv operation:%{public}d standByEnable_:%{public}s",
+415:             streamIndex_, operation, (standByEnable_ ? "true" : "false"));
+416:     }
+417:     Trace trace(traceTag_ + " OnStatusUpdate:" + std::to_string(operation));
+418:     CHECK_AND_RETURN_LOG(operation != OPERATION_RELEASED, "Stream already released!");
+419:     std::shared_ptr<IStreamListener> stateListener = streamListener_.lock();
+420:     CHECK_AND_RETURN_LOG((stateListener != nullptr && playerDfx_ != nullptr), "nullptr");
+421:     CHECK_AND_RETURN_LOG(audioServerBuffer_->GetStreamStatus() != nullptr, "stream status is nullptr");
+422:     switch (operation) {
+423:         case OPERATION_STARTED:
+424:             HandleOperationStarted();
+425:             stateListener->OnOperationHandled(START_STREAM, 0);
+426:             OnCheckActiveMusicTime("Started");
+427:             break;
+428:         case OPERATION_PAUSED:

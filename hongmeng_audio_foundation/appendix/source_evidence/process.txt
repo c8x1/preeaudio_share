@@ -1,0 +1,26 @@
+Process L1640–1664：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1640
+1640: void HpaeRendererManager::Process()
+1641: {
+1642:     Trace trace("HpaeRendererManager::Process");
+1643:     if (outputCluster_ != nullptr && IsRunning()) {
+1644:         UpdateAppsUid();
+1645:         if (appsUid_.empty() && !coBufferNodeIsConnected_) {
+1646:             if (sinkInfo_.routeFlag == AUDIO_OUTPUT_FLAG_INTERPHONE) {
+1647:                 outputCluster_->Stop();
+1648:                 return;
+1649:             }
+1650:             int64_t now = ClockTime::GetCurNano();
+1651:             noneStreamTime_ = noneStreamTime_ == 0 ? now : noneStreamTime_;
+1652:             if (now - noneStreamTime_ > SUSPEND_TIME_OUT_S * AUDIO_NS_PER_SECOND) {
+1653:                 outputCluster_->Stop();
+1654:                 return;
+1655:             }
+1656:         } else {
+1657:             noneStreamTime_ = 0;
+1658:         }
+1659:         if (QueryOneStreamUnderrun()) {
+1660:             return;
+1661:         }
+1662:         outputCluster_->DoProcess();
+1663:     }
+1664: }

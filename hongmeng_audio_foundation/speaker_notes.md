@@ -1,0 +1,506 @@
+# 一段声音的旅程：鸿蒙音频底座的协同与自研演进
+
+15页主讲55分钟，另5分钟答疑。A1–A6按需。分钟数含试听、互动和停顿。
+
+## 01 我们要交付怎样的声音体验
+
+时间：3分钟
+
+先设想一个常见场景：音乐正在播放，我们打开游戏，随后收到提醒，最后切换到耳机。用户只做了几次操作，系统却要协调多个应用、场景规则和真实输出设备。
+第一类要求是行为合理。游戏加入时能否与音乐并发？提醒是混入、压低其他声音还是触发中断？这些由具体焦点和会话策略决定，不在这里预设统一答案。选择耳机以后，哪些声音应该去哪个设备，也需要系统作出一致决策。
+第二类要求是执行质量。允许播放的音效要及时响应，音乐要连续，音量和设备变化要有正确衔接。同时，系统要控制处理与调度开销，为其他业务和续航留出空间。
+今天讲的音频底座，包含决定这些行为的策略、管理流与状态的服务、执行数据处理的引擎，以及兑现输出的设备适配。自研引擎是技术重点，但它始终服务于这套全局协同。接下来沿同一个场景看全局分工，再理解为什么演进以及怎样实现收益。
+
+演示 cue：A：原创三路声音合成，10秒；只说明场景，不作为策略或性能实测。
+讲述安排：0:00–0:30 试听与场景；0:30–1:30 行为要求；1:30–2:20 执行质量；2:20–3:00 分享主线。
+转场：体验背后有哪些系统角色？先用一张全局图明确分工。
+技术边界：焦点、并发、duck和设备路由结果依具体策略；音频素材为教学合成。
+
+依据：
+- 用户已确认的分享定位与体验目标。
+- 当前源码音频焦点入口：services/audio_policy/server/domain/zone/src/audio_zone_service.cpp L818–853；具体实现下页展开。
+
+---
+
+## 02 鸿蒙音频底座：谁决策，谁管理，谁执行
+
+时间：4分钟
+
+先把刚才的四个动作放进系统。应用通过AudioRenderer等接口表达播放需求。策略服务依据场景、焦点、设备和音量规则作出决定。流服务负责接入、状态、共享音频缓冲和生命周期。引擎执行转换、混音、音效等处理，再通过Sink与HDI交给驱动和设备。
+图的横向实线表示播放数据职责链，紫色虚线表示控制关系。它是职责图，不是进程部署图，也不是所有消息都必定按一条同步调用栈经过。策略可能通知应用处理焦点变化，音量和路由也会通过各自的管理路径影响执行。
+源码里，AudioZoneService把焦点激活转给InterruptService，根据usage和客户端信息获取输出设备，并对接音量操作。服务端RendererInServer启动流时，先更新策略侧会话操作，再在适用分支等待设备连接，随后启动具体流。这说明策略与服务协作有实际接口，而不只是画在架构图上方。
+自研主要改变引擎侧的处理和执行组织，但更快的引擎仍要执行正确的策略、使用正确的设备、维护一致的流状态。我们会反复回到这张职责图，判断一项变化应该由哪一层决定、哪一层落实。
+
+演示 cue：无
+讲述安排：按本页分钟数讲述：先联系场景，再解释图，最后回扣结论并转场。
+转场：把游戏加入和耳机切换放进这张职责图，看看一次变化怎样传递。
+技术边界：接口控制路径有折叠；焦点通知可回到应用，不能假定引擎单独完成全部策略行为。
+
+依据：
+- ActivateAudioInterrupt L818–853：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/zone/src/audio_zone_service.cpp#L818
+- FetchOutputDevices L966–978：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/zone/src/audio_zone_service.cpp#L966
+- SetSystemVolumeLevel L720–734：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/zone/src/audio_zone_service.cpp#L720
+- StartInner L1576–1606：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L1576
+- CreateRendererStream L273–307：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/hpae_adapter_manager.cpp#L273
+- SinkOutput::DoProcess / RenderFrame L121–165：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L121
+
+---
+
+## 03 一次场景变化，怎样传遍整个系统
+
+时间：3分钟
+
+先看游戏加入。应用申报播放场景和会话需求，策略依据当前焦点与并发规则作出决定。决定可能影响新流是否启动，也可能通过通知让相关应用暂停或调整。流服务接收和维护流的生命周期，引擎把允许播放的输入接入相应处理图，输出侧继续消费结果。图中没有规定游戏一定压低音乐，因为那取决于策略和应用行为。
+再看切耳机。设备可用性与路由规则共同影响目标设备，策略选择后，服务和引擎需要落实输出资源与流状态。对于已存在目标sink之间的可移动会话，HPAE有保留SinkInput、拆旧连接、更新设备及span、重新连接处理簇的路径。新设备真正可用还涉及适配与驱动，不能把一次管理层回调当成声学切换完成。
+源码的StartInner也说明这类协作：普通非FAST分支在更新策略侧会话操作后等待数据连接，再启动流，注释明确关联蓝牙连接期间的连续性。我们不在主讲展开调用栈，而是用它支持“先决策、再协调执行条件”的关系。
+因此，焦点正确但通路没有及时更新，或者输出图正确但设备未准备好，都可能影响体验。接下来讨论旧方案和自研时，必须保留这些全局职责。
+
+演示 cue：无
+讲述安排：按本页分钟数讲述：先联系场景，再解释图，最后回扣结论并转场。
+转场：这套协同在PulseAudio时代怎样实现？先看5.1旧架构。
+技术边界：不固定游戏/提醒的焦点结果；引擎迁移仅指存在目标sink的可移动会话。
+
+依据：
+- ActivateAudioInterrupt L818–853：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/zone/src/audio_zone_service.cpp#L818
+- FetchOutputDevices L966–978：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/zone/src/audio_zone_service.cpp#L966
+- StartInner L1576–1606：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L1576
+- MoveSinkInputByIndexOrName L1065–1095：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_manager.cpp#L1065
+- MoveStreamSync L872–916：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L872
+- AddSingleNodeToSink L106–179：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L106
+
+---
+
+## 04 PulseAudio时代，整个底座怎样协同
+
+时间：4分钟
+
+沿用刚才的分工，只把执行部分切回OpenHarmony5.1。应用和鸿蒙策略、流服务已经存在，普通播放由PaAdapterManager接入PA。服务端流通过libpulse的context和stream操作播放，PA的sink-input与sink模型组织输入和输出。
+鸿蒙没有把全部行为交给一个外部黑盒。策略适配调用PA移动sink-input等接口落实路由；框架自定义hdi_sink模块包含场景取数、混音、音效调用和硬件适配。AudioServer还在audio_server进程内启动线程调用ohos_pa_main，因此不能把图画成所有PA都在独立进程。
+普通主输出中，hdi_sink渲染侧生成数据，再用消息队列交给独立HDI写线程。DIRECT和VOIP当时还有ProAudioStreamManager等其他路径，我们这次不混用路径来比较。
+PA提供成熟的流与输出组织机制，鸿蒙侧承接系统规则和设备集成。自研演进需要保持这些系统能力，同时重新组织处理执行。这张图既是下一页找成本的地图，也是后续比较时保留上层职责的基线。
+
+演示 cue：无
+讲述安排：按本页分钟数讲述：先联系场景，再解释图，最后回扣结论并转场。
+转场：业务要求提高后，哪些成本值得优化？沿执行与维护边界逐一定位。
+技术边界：PA版本声明17.0另见附录；图不表示独立进程边界，旧方案能力不等于全部由PA上游实现。
+
+依据：
+- GetPlaybackManager L22–39：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/src/i_stream_manager.cpp#L22
+- paDaemonThread / ohos_pa_main L261–273：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/src/audio_server.cpp#L261
+- pa_stream_write / PAStreamWriteCb L699–755：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/src/pa_renderer_stream_impl.cpp#L699
+- MoveSinkInputByIndexOrName L447–473：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/audioadapter/src/pulse_audio_service_adapter_impl.cpp#L447
+- SinkRenderPrimaryProcess L2315–2354：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L2315
+- ProcessRenderUseTiming L2449–2477：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L2449
+- ProcessHdiRendererPrimary / ThreadFuncWriteHDI L3821–3887：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L3821
+
+---
+
+## 05 业务要求提高后，成本出现在哪里
+
+时间：3分钟
+
+旧架构能工作，不代表执行组织不再有改进空间。当我们同时追求更及时的交互、更低资源开销，并持续增加设备与处理能力时，可以沿上一页地图看三种成本。
+第一，线程间数据交接。5.1普通主输出由渲染侧把chunk投递给primary.dq，独立写线程取出后提交设备。这个边界提供解耦，也意味着排队、唤醒和调度机会。需要测量才能知道具体花了多少时间，不能把每个线程边界都等同于固定毫秒数。
+第二，控制操作的同步。例如PA流Start使用PaLockGuard保护mainloop操作。不同执行上下文需要协调，就可能竞争或等待。我们用具体锁保护实例说明成本类型，不泛称旧PA所有消息都使用同一种锁。
+第三，通路演进成本。旧HDI模块中普通、多声道和offload处理有分别展开的专用路径；相似职责在不同场景里需要保持一致。旧代码也有共用函数，所以问题是如何进一步集中职责与复用，而不是断言毫无抽象。
+这三类成本不是实测瓶颈排行榜。它们是团队已经采取的优化动作所对应的结构位置。下一页先写清目标和不能破坏的约束，再逐项看自研实现。
+
+演示 cue：无
+讲述安排：按本页分钟数讲述：先联系场景，再解释图，最后回扣结论并转场。
+转场：我们要改善哪些指标，同时必须保持哪些系统约束？
+技术边界：不虚构业务规模/测试成绩；线程边界不等于固定时延，同步实例不代表所有PA操作。
+
+依据：
+- ProcessRenderUseTiming L2449–2477：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L2449
+- ProcessHdiRendererPrimary / ThreadFuncWriteHDI L3821–3887：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L3821
+- PaLockGuard L25–63：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/include/pa_adapter_tools.h#L25
+- Start / pa_stream_cork L154–182：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/src/pa_renderer_stream_impl.cpp#L154
+- MultiChannel processing L3409–3491：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L3409
+
+---
+
+## 06 自研要改变什么，又必须守住什么
+
+时间：3分钟
+
+自研目标现在已经明确。团队提供的结果是时延降低、性能提升、功耗降低，以及通路实现更精简、扩展性更好。这些结果需要放在系统约束下理解。
+首先是连续性。减少线程中转和Buffer时，端到端抗抖动能力需要保持。其次是行为语义。新引擎仍要服从焦点、路由和音量规则，服务层仍要维护流状态。再次是设备和场景能力，普通播放之外仍有不同类型入口和产品配置，不能用一条路径代替所有行为。
+下面按三项动作展开。线程模型精简把部分处理与提交职责集中，减少已核验的跨线程中转。无锁消息队列让常规控制请求通过原子发布和批量消费进入执行侧。节点化把转换、增益、混音和音效等职责组织成可复用单元。
+每项都用同一套顺序讲：旧结构在哪里产生交接或竞争，新结构怎样做，减少了什么，还要守住哪些条件。我们把定性结果作为团队事实呈现，把源码机制作为解释，不给没有材料支持的幅度。
+
+演示 cue：无
+讲述安排：按本页分钟数讲述：先联系场景，再解释图，最后回扣结论并转场。
+转场：先看线程精简，明确旧渲染线程和HDI写线程的交接怎样变化。
+技术边界：用户团队定性结论含抗抖动保持，不从结构静态证明量化收益。
+
+依据：
+- GetPlaybackManager L29–64：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/i_stream_manager.cpp#L29
+- ActivateAudioInterrupt L818–853：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/zone/src/audio_zone_service.cpp#L818
+- FetchOutputDevices L966–978：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/zone/src/audio_zone_service.cpp#L966
+- Notify / Run L75–125：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_signal_process_thread.cpp#L75
+- PushRequest / HandleRequests / TryExpandQueue L57–145：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L57
+- ProcessCluster::Connect L206–232：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_process_cluster.cpp#L206
+
+---
+
+## 07 线程精简：减少执行环节之间的交接
+
+时间：4分钟
+
+这里回答最具体的问题：精简了哪些线程职责？看5.1普通主输出。ProcessRenderUseTiming在渲染侧生成chunk，再向primary.dq投递HDI_RENDER。独立ThreadFuncWriteHDI阻塞取队列消息，收到chunk后调用ProcessHdiRendererPrimary，最终RenderWrite提交设备。这是数据生产与设备写入分开执行的边界。
+当前HPAE的HpaeSignalProcessThread循环先HandleMsg再Process。RendererManager::Process在状态等条件满足时进入OutputCluster::DoProcess，再调用SinkOutput::DoProcess。SinkOutput按输出需求拉取上游处理结果，随后在同一调用链直接调用audioRendererSink_->RenderFrame。
+因此，可以从实现确认：旧模块普通渲染到独立HDI写线程的这段交接，在当前引擎处理调用链中集中执行。声音不再经过上述primary.dq转交。这让减少排队、唤醒、调度与中转缓存成为可能，而不是只把线程名称改短。
+这种集中也要求同一执行链承担处理和提交预算。设备写入可能等待，下游驱动内部可能还有线程，系统还有策略与服务线程。我们不把局部线程职责合并扩大成“音频系统只剩一个线程”。下一页讨论减少中转Buffer时，为什么还要认真保留抗抖动所需余量。
+
+演示 cue：无
+讲述安排：按本页分钟数讲述：先联系场景，再解释图，最后回扣结论并转场。
+转场：中转少了，Buffer也能减少；怎样同时保持端到端抗抖动？
+技术边界：同一调用链仅指引擎到RenderFrame调用；没有测量固定耗时或全局线程数。
+
+依据：
+- ProcessRenderUseTiming L2449–2477：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L2449
+- ProcessHdiRendererPrimary / ThreadFuncWriteHDI L3821–3887：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L3821
+- Notify / Run L75–125：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_signal_process_thread.cpp#L75
+- Process L1640–1664：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1640
+- OutputCluster::DoProcess L79–84：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_output_cluster.cpp#L79
+- SinkOutput::DoProcess / RenderFrame L121–165：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L121
+
+---
+
+## 08 Buffer精简，怎样同时守住抗抖动
+
+时间：4分钟
+
+上一页的线程职责集中，意味着旧primary.dq交接边界不再存在。这里的Buffer减少，首先应联系中转结构的减少，而不是简单地把每一处缓冲都缩小。
+缓存承担不同职责。共享音频缓冲接住应用交付的数据，服务端根据读写位置取数。Converter保留待处理与已处理数据，用于格式和块长适配。SinkOutput也会积攒数据，凑够一次设备提交量。这些源码都仍然存在，说明执行模型精简并没有取消供数与粒度适配的必要机制。
+端到端抗抖动关注生产者或调度短时波动后，设备是否仍持续获得数据。中转队列数量、缓存容量、当前库存和出声时延是不同量。删掉一个交接边界，不能直接算成减少固定N毫秒，也不能仅凭保留一个缓存证明抗抖动完全等价。
+团队提供的结果是，线程与Buffer精简后降低时延，并保持端到端抗抖动能力。我们把它与机制一起呈现：减少冗余交接，保留必要余量与适配，最后通过相同负载和抖动注入条件下的欠载及连续性验证。先听连续与人为断音两段，帮助识别连续性目标，素材不是产品测试。
+所以第一项创新同时面对两个问题：声音少等几次，短时迟到仍能被系统消化。接着看控制消息怎样少受锁竞争影响。
+
+演示 cue：B：02_continuous.wav与03_simulated_dropout.wav，各10秒，听连续性，非实机测试。
+讲述安排：按本页分钟数讲述：先联系场景，再解释图，最后回扣结论并转场。
+转场：数据中转之外，控制请求怎样更顺畅地进入执行侧？
+技术边界：缓冲职责存在不证明尺寸或抗抖动等价；音频为模拟，不代表真实欠载测量。
+
+依据：
+- ProcessRenderUseTiming L2449–2477：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L2449
+- WriteData L1122–1161：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L1122
+- ExtractOutputFromProcessedBuffer L815–840：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_audio_format_converter_node.cpp#L815
+- ReadDataAndConvertFormat L680–707：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L680
+
+---
+
+## 09 无锁队列：控制请求怎样进入执行侧
+
+时间：4分钟
+
+引擎不仅持续处理声音，还要接收启动、暂停、连接调整等控制请求。以启动流为例，旧PA集成的PaRendererStreamImpl::Start在PaLockGuard下调用pa_stream_cork；这个保护在适用条件下进入pa_threaded_mainloop_lock。
+当前HPAE的RendererManager::Start先把工作封装成请求。SendRequest把请求压入HpaeNoLockQueue并通知线程。常规发布先取得空闲请求节点，写入任务，再用原子比较交换发布到请求链。消费侧原子摘取当前批次，恢复处理顺序并逐个执行，随后运行Process。
+Start请求执行时会更新SinkInput状态、连接输入会话、设置淡入，并按条件启动会话音效。这说明队列承接的是控制工作，而不是承载PCM数据的那条数据通路。进入该管理器队列的这些状态修改由消费侧执行，常规队列发布与摘取不需要一把队列互斥锁来保护整个操作。
+这与团队所说减少锁竞争、让消息流转更顺畅相对应。仍要准确限定：Notify和条件等待有锁，队列扩容也加锁并分配内存；容量耗尽且取不到空节点时会丢请求。不能把队列名称扩大成全链无锁。音量、路由等控制有各自接口，我们也不宣称每一种控制都统一走此队列。
+请求接受、状态确认和实际首帧消费还有不同语义，附录再展开。主讲先记住：执行模型通过明确的请求交接，让常规控制少受队列互斥锁竞争影响。
+
+演示 cue：无
+讲述安排：按本页分钟数讲述：先联系场景，再解释图，最后回扣结论并转场。
+转场：执行效率之外，新增通路怎样少重复已有处理逻辑？
+技术边界：无锁限定常规队列发布与摘取；非全链无锁或硬实时保证，Start不等于首帧已出声。
+
+依据：
+- Start / pa_stream_cork L154–182：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/src/pa_renderer_stream_impl.cpp#L154
+- PaLockGuard L25–63：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/include/pa_adapter_tools.h#L25
+- RendererManager::Start L919–945：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L919
+- SendRequest L1755–1770：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1755
+- PushRequest / HandleRequests / TryExpandQueue L57–145：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L57
+- PushRequestNode 原子发布 L172–191：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L172
+- ProcessRequests 批量执行 L227–262：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L227
+- Notify / Run L75–125：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_signal_process_thread.cpp#L75
+
+---
+
+## 10 节点化：处理职责怎样复用
+
+时间：4分钟
+
+线程和队列主要改善运行时的执行组织。节点化进一步回答：业务增加一种通路时，怎样复用已有处理能力？
+先按职责看图。输入节点读出数据；流级处理承担格式适配、增益和可选会话音效；同场景的流在场景Mixer汇合，相关分支接渲染音效；多个场景再经OutputCluster的转换与输出Mixer汇入SinkOutput。图把几个节点折叠成职责组，真实顺序在附录展开。
+Node负责局部计算，Cluster组合相关节点，Manager管理会话、场景簇、连接和状态。Manager不是每一轮机械从左向右遍历所有节点的调度器。实际由输出端拉取前驱结果，没有现成结果时才递归计算，PCM结果顺着数据方向返回。
+复用也有两种含义：同一种Converter、Gain、Mixer职责可以在不同位置复用其实现；符合场景控制决策时，还可以复用默认场景簇实例。不能因此认为所有流都共享一个有状态音效实例。
+源码里的Connect、可选SessionEffect分支，以及创建/共享/旁路簇的决策，是灵活组装的落点。相较旧HDI模块中分别展开的通路逻辑，它将职责进一步集中。下一页用真实可选会话音效接入，把“扩展性好”变成一个具体操作。
+
+演示 cue：无
+讲述安排：按本页分钟数讲述：先联系场景，再解释图，最后回扣结论并转场。
+转场：给一个会话接入音效，哪些节点能复用、连接怎样变化？
+技术边界：Manager控制职责与拉图调用不同；复用类型不等于任意共享有状态实例。
+
+依据：
+- ProcessCluster::Connect L206–232：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_process_cluster.cpp#L206
+- OutputCluster::Connect L110–135：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_output_cluster.cpp#L110
+- CreateProcessClusterInner L179–240：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L179
+- InputPort::ReadPreOutputData L315–325：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/include/hpae_node.h#L315
+
+---
+
+## 11 一个会话接入音效，哪些逻辑能复用
+
+时间：3分钟
+
+假设需求是给一个会话启用独立音效，而其他已有处理职责继续工作。这里使用公开代码已实现的能力作例子，不将它包装为未经提供的内部项目故事。
+当前ProcessCluster::CreateSessionEffectNode先检查该会话是否已绑定音效，确认Converter和LoudnessGain节点存在，再创建会话音效节点并初始化实例。初始化失败时返回错误；成功后才把Converter到LoudnessGain之间的原连接拆开，改成Converter接SessionEffect，SessionEffect接LoudnessGain，最后登记到会话映射。
+这样，已有转换、增益和后续Mixer职责继续复用，新能力集中在一个处理单元及其连接，而不必重写整条通路。Connect函数也会根据是否存在SessionEffect选择前驱。相较旧集成把场景处理放在HDI专用路径函数内，新模型提供了明确的局部组合位置。这里不声称存在同功能跨版本代码量对比。
+组合仍然有契约。当前会话音效相关输入要求48kHz双声道，还要管理初始化、启动、Flush、销毁与设备迁移状态。这些约束需要算法与框架一起对齐。节点化让接口和责任更明确，并不让任意算法可以无条件插入。
+下页把这个局部能力放回策略、服务和设备变化的全过程，检查自研创新究竟服务于谁。
+
+演示 cue：无
+讲述安排：按本页分钟数讲述：先联系场景，再解释图，最后回扣结论并转场。
+转场：把三项创新放回开场场景，看策略如何驱动、各层怎样协同执行。
+技术边界：SessionEffect有格式和状态条件；不提供未经核实的旧新代码量或交付周期对比。
+
+依据：
+- CreateSessionEffectNode L547–582：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_process_cluster.cpp#L547
+- SessionEffect 输入格式约束 L351–365：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_process_cluster.cpp#L351
+- ProcessCluster::Connect L206–232：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_process_cluster.cpp#L206
+- SinkRenderPrimaryProcess L2315–2354：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L2315
+
+---
+
+## 12 回到全局：策略驱动，执行侧协同落实
+
+时间：4分钟
+
+回到开场。音乐播放、游戏加入、提醒出现、切到耳机，仍然是同一组动作。现在我们可以把系统决定与执行机制放在一起。
+策略根据焦点、会话、设备和音量规则决定行为，也可能通知相关应用处理中断或闪避。流服务协调启动条件、状态与共享缓冲；引擎接收适用的管理请求，更新节点与处理通路；设备适配把结果交给目标输出。图表示职责协作，中间IPC和异步回程有折叠，不能读成单一同步时序。
+当允许的新流加入，节点组合让已有转换、增益、混音职责继续复用。当需要启动或调整连接，相关管理请求通过队列交给执行侧处理。当处理图需要向设备供数，精简后的线程调用链减少已核验的交接边界。
+切换目标设备时，同样不能只关注最后一次RenderFrame。普通可移动会话会保留SinkInput，拆旧连接，更新设备及span，按状态重连处理簇。服务与设备侧还必须保持资源和状态一致。每个层面都可能影响最终体验。
+因此，策略做出正确决定是前提，服务把生命周期和条件协调好，引擎高效执行，设备侧按约输出，才能让用户感到整个系统反应合理。后面评价收益，也必须同时观察引擎局部与端到端结果。
+
+演示 cue：无
+讲述安排：按本页分钟数讲述：先联系场景，再解释图，最后回扣结论并转场。
+转场：评价收益时，局部改进与端到端效果应该怎样关联？
+技术边界：不把策略的直接影响理解为全都同步直调引擎，设备迁移限定可移动路径。
+
+依据：
+- ActivateAudioInterrupt L818–853：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/zone/src/audio_zone_service.cpp#L818
+- FetchOutputDevices L966–978：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/zone/src/audio_zone_service.cpp#L966
+- SetSystemVolumeLevel L720–734：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/zone/src/audio_zone_service.cpp#L720
+- StartInner L1576–1606：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L1576
+- SendRequest L1755–1770：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1755
+- ProcessCluster::Connect L206–232：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_process_cluster.cpp#L206
+- MoveSinkInputByIndexOrName L1065–1095：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_manager.cpp#L1065
+- AddSingleNodeToSink L106–179：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L106
+- SinkOutput::DoProcess / RenderFrame L121–165：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L121
+
+---
+
+## 13 收益怎样在整条音频链路上体现
+
+时间：4分钟
+
+团队给出的定性成果是降低时延、提升性能、降低功耗，并保持抗抖动能力。现在把这些结果与我们刚刚解释的机制联系起来。
+减少线程与Buffer中转，减少声音在执行边界之间等待的机会；常规控制队列减少互斥锁竞争，有助于请求进入执行侧。这两类改动可影响响应和资源开销，但一次RenderFrame前的局部耗时不等于应用事件到声音出现的完整时延。应用供数、策略协调、设备连接和驱动仍在链路里。
+性能和功耗同样要区分观察对象。局部CPU时间、线程唤醒和调度情况帮助定位原因。最终CPU占用、单位时间处理能力或设备能量，需要在相同业务语义与设备负载下观察。少一次唤醒是机制机会，不能直接换算成固定功耗百分比。
+节点化主要体现为处理职责复用、修改范围更集中及扩展接口更明确。评价时可以看新增需求改动了哪些模块、需要补哪些适配与回归，而不只数节点数量。我们没有内部工程量数据，因此不编造交付周期缩短幅度。
+对听众而言，这一页把“做了什么”连到“为什么值得做”，也明确结果要在哪里测。下一页给一份能执行的全场景验证设计，说明未来真实数据应该怎样补进来。
+
+演示 cue：无
+讲述安排：按本页分钟数讲述：先联系场景，再解释图，最后回扣结论并转场。
+转场：同一组音乐/游戏/提醒/切耳机场景，怎样比较旧新方案？
+技术边界：上屏为机制与评价维度对应，不是测量结果；局部与端到端不能自动同比。
+
+依据：
+- ProcessRenderUseTiming L2449–2477：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L2449
+- ProcessHdiRendererPrimary / ThreadFuncWriteHDI L3821–3887：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L3821
+- SinkOutput::DoProcess / RenderFrame L121–165：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L121
+- PushRequest / HandleRequests / TryExpandQueue L57–145：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L57
+- CreateProcessClusterInner L179–240：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L179
+- CreateSessionEffectNode L547–582：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_process_cluster.cpp#L547
+
+---
+
+## 14 用同一个完整场景验证改进
+
+时间：4分钟
+
+这一页提供验证设计，尚未执行产品对比。先选可比较基线：同一产品、同一硬件和同业务功能，尽量在可切换引擎的可比构建上进行。5.1与当前master在很多方面都不同，不能把整套版本差异全归因于引擎。
+固定音乐、游戏音效、提醒和切耳机的事件脚本，保持格式、并发语义、音效功能、音量、设备和环境条件可比。缓冲及线程配置可能正是优化变量，应记录各自设置；不要为了数字好看隐去差异。性能测试还应记录温度、后台负载、测试时长和重复次数。
+响应时延要定义起止点，例如应用事件到回环或声学检测到目标声音，并对齐时钟；同时记录关键控制及处理阶段，才能解释长尾来自哪一层。CPU与线程唤醒用于定位开销，设备能量则需要同负载、同测量窗口和方法。
+连续性要在无扰动和受控扰动条件下分别观察。按相同方法增加供数或调度压力，记录欠载、断音与切换结果，检查降低时延后是否保持抗抖动。也要验证策略行为是否符合预期，不能只听到声音就算通过。
+目前团队定性结论已明确，量化数据和平台资料尚待补充。取得资料后，就能沿这张图填入带条件的结果，而不是制作脱离场景的漂亮数字。
+
+演示 cue：无
+讲述安排：按本页分钟数讲述：先联系场景，再解释图，最后回扣结论并转场。
+转场：用贯穿场景收束，回顾整个音频底座的协同与演进。
+技术边界：拟议测量方案，不展示伪造数据；5.1与master的结构对照不等同受控性能对比。
+
+依据：
+
+
+---
+
+## 15 鸿蒙音频底座的协同与演进
+
+时间：4分钟
+
+再听开场同一段声音。音乐、游戏和提醒没有变，我们现在可以解释支撑它们的整个系统。
+策略组织行为：谁能播放、怎样并发、选择什么设备、如何处理音量与焦点。流服务协调状态和数据条件。引擎执行处理与提交，设备适配和驱动把声音送到真实输出。只有这些职责衔接正确，用户才会感到系统行为合理。
+我们先看旧PA集成，理解已经具备的能力和执行边界，再看自研改变。线程与Buffer精简减少已核验的跨线程交接；无锁消息队列改善常规控制请求发布与消费；节点化把转换、增益、混音和音效组织成可复用处理单元。这三项改动分别作用于执行链、控制流与通路组织。
+团队提供的成果是时延降低、性能提升、功耗降低，兼顾端到端抗抖动，同时改善扩展性。源码解释机制，完整场景测试验证系统收益，具体幅度仍需要带条件的数据。
+请大家各用一句话回答：收到新需求时，先找哪一层作决定？改变执行模型时，哪些连续性和状态约束必须守住？讨论收益时，观察的是局部阶段还是用户端到端体验？能区分这些问题，就能在算法、框架、设备与测试之间更有效地协作。
+下面五分钟答疑。需要深入线程、队列、节点或设备迁移时，我们进入对应附录。
+
+演示 cue：回放A：01_scene_mix.wav，10秒。
+讲述安排：按本页分钟数讲述：先联系场景，再解释图，最后回扣结论并转场。
+转场：进入5分钟Q&A，按问题选择A1–A6。
+技术边界：收束归纳，不新增产品性能保证或统一策略规则。
+
+依据：
+- ActivateAudioInterrupt L818–853：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/zone/src/audio_zone_service.cpp#L818
+- FetchOutputDevices L966–978：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/zone/src/audio_zone_service.cpp#L966
+- StartInner L1576–1606：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L1576
+- Notify / Run L75–125：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_signal_process_thread.cpp#L75
+- ProcessCluster::Connect L206–232：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_process_cluster.cpp#L206
+- SinkOutput::DoProcess / RenderFrame L121–165：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L121
+
+---
+
+## A1 A1  线程与Buffer边界对照
+
+时间：0分钟
+
+旧方案还有PA daemon主循环、PaAdapterManager的threaded mainloop、HDI模块渲染和设备写入等执行角色。它们不一定全部每流独占，也不能从函数名直接得到产品线程总数。本图只展开普通主输出中已经逐函数确认的一段。
+服务端数据通过libpulse流写入，PA流有缓冲请求和协商语义。hdi_sink渲染侧生成chunk，通过primary.dq交给独立HDI写线程。队列传递的是memchunk及其内存引用，不应假定每交接都必然复制整块音频。
+当前HPAE普通回调拉取链中，服务端从共享音频缓冲复制到SinkInput请求内存，后续Converter可能保留格式/块长适配数据，SinkOutput按提交粒度拼帧，再在处理调用链中RenderFrame。旧primary.dq与独立写线程之间的边界不再位于这条引擎提交链中，但设备适配和驱动内部行为必须继续看具体实现。
+因此，说Buffer减少时需要标明位置：这里直接证明的是一处中转交接消失，当前仍有必要缓存。PA的20/80毫秒参数是请求属性，不是测得的端到端时延；当前mixer常见20毫秒块长也不是全链统一周期。
+要补全某产品的完整线程及缓存清单，应结合构建配置、运行时dump和实际设备路径逐一对应。静态源码不能替代运行时库存与调度测量。
+
+演示 cue：无
+讲述安排：按答疑问题选择展开，附录不计主讲时长。
+转场：需要无锁队列并发细节时看A2。
+技术边界：不从请求缓冲属性推导产品时延或线程总数。
+
+依据：
+- paDaemonThread / ohos_pa_main L261–273：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/src/audio_server.cpp#L261
+- pa_stream_write / PAStreamWriteCb L699–755：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/src/pa_renderer_stream_impl.cpp#L699
+- ConnectRendererStreamToPA L673–702：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/src/pa_adapter_manager.cpp#L673
+- ProcessRenderUseTiming L2449–2477：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L2449
+- ProcessHdiRendererPrimary / ThreadFuncWriteHDI L3821–3887：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L3821
+- WriteData L1122–1161：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L1122
+- ExtractOutputFromProcessedBuffer L815–840：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_audio_format_converter_node.cpp#L815
+- ReadDataAndConvertFormat L680–707：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L680
+- SinkOutput::DoProcess / RenderFrame L121–165：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L121
+
+---
+
+## A2 A2  无锁队列的常规路径与慢路径
+
+时间：0分钟
+
+队列初始1000个请求节点，90%占用阈值触发扩容，每次增加1000，上限5000。初始节点数组和临时请求向量预分配，但这不是全生命周期不分配的保证。
+常规PushRequest先从空闲链取节点，将任务移入节点，再通过CAS更新请求头。HandleRequests用原子比较交换摘走当前链；ProcessRequests收集当前批次，再反向遍历恢复该批次发布次序，逐个执行任务。回收请求节点供后续使用。并发生产者的顺序以实际原子发布关系为准，不给外部业务额外的全局时间排序保证。
+慢路径TryExpandQueue使用expandMutex_，并分配新的RequestNode数组。达到上限且没有空节点时会丢弃本次请求并报告异常。ProcessRequests的临时vector容量不足也可能reserve；任务本身是std::function，不能声称捕获内容与任务执行没有额外成本。
+线程的Notify和条件等待也有锁。无锁队列的价值在于常规队列发布和摘取不用一把队列互斥锁覆盖，而不是承诺整个引擎无锁、无等待或硬实时。Run先HandleMsg再Process，没有统一10毫秒tick；实际节奏还受欠载分支和设备提交影响。
+
+演示 cue：无
+讲述安排：按答疑问题选择展开，附录不计主讲时长。
+转场：需要真实节点图时进入A3。
+技术边界：不作全链无锁、无分配、硬实时或必不丢请求的保证。
+
+依据：
+- 队列容量与扩容阈值 L28–38：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.h#L28
+- PushRequest / HandleRequests / TryExpandQueue L57–145：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L57
+- PushRequestNode 原子发布 L172–191：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L172
+- ProcessRequests 批量执行 L227–262：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L227
+- Notify / Run L75–125：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_signal_process_thread.cpp#L75
+
+---
+
+## A3 A3  真实节点连接与拉取执行
+
+时间：0分钟
+
+上排按PCM数据方向看普通ProcessCluster：输入到Converter，可选SessionEffect，然后LoudnessGain、Gain和场景Mixer。相关分支中Mixer后接RenderEffect。特殊场景分支没有在本图穷举。
+下排是输出侧。不同场景输出各有Converter，汇入输出Mixer，再接SinkOutput。普通输出Mixer在非工厂构建且初始化成功等条件下启用limiter，不能宣称所有路径绝不削波。当前普通场景和输出Mixer常见20毫秒处理块；SinkOutput原始提交粒度可能不同。
+Connect接口通常由后继连接前驱，所以读调用代码时不要把Connect方法的调用者顺序当成数据方向。实际计算从输出端要数据：InputPort遍历前驱输出端口，OutputPort没有现成数据时才调用节点DoProcess。已有结果可直接消费，因此不是每一轮所有节点无条件执行一次。
+SinkOutput为了凑足设备提交量，也可能多次拉取上游，再从浮点结果转换并积攒到提交缓存。前驱缓存、块长和输出提交粒度共同影响执行，不应把“20毫秒Mixer”说成全引擎每20毫秒一次的固定定时器。
+
+演示 cue：无
+讲述安排：按答疑问题选择展开，附录不计主讲时长。
+转场：需要跨层控制时序时进入A4。
+技术边界：可选音效和limiter受分支条件限制；Connect代码方向与数据方向不同。
+
+依据：
+- ProcessCluster::Connect L206–232：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_process_cluster.cpp#L206
+- OutputCluster::Connect L110–135：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_output_cluster.cpp#L110
+- OutputCluster 构造与limiter条件 L32–47：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_output_cluster.cpp#L32
+- InputPort::ReadPreOutputData L315–325：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/include/hpae_node.h#L315
+- OutputPort::PullOutputData L389–404：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/include/hpae_node.h#L389
+- ReadDataAndConvertFormat L680–707：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L680
+
+---
+
+## A4 A4  策略、服务与引擎的启动协作
+
+时间：0分钟
+
+客户端Start先检查状态，调用IPC启动并检查同步返回，再通过条件变量等待RUNNING；超时会Stop。服务端StartInner验证状态和缓冲后，更新策略侧会话操作。普通非FAST分支随后WaitForDataConnection，再进入具体流的Start，DIRECT等路径另有StartRender。
+HpaeRendererStreamImpl转给HpaeManager。HpaeManager把lambda入队，执行时调用对应RendererManager::Start；后者再次排队设备级连接与状态工作。管理层随后可发出STARTED状态，服务端转成操作完成回程，客户端据此进入RUNNING。
+重要的是，这个管理状态回程没有等待设备级lambda实际完成的屏障。设备级连接、正式数据拉取和实际声学出声是不同观察点。跨线程并发下，不能单凭本图保证客户端观察RUNNING与真实数据消费有固定全局先后顺序。
+图中的策略操作返回也不等于设备输出已准备完毕，服务端还有条件性的等待连接。它解释为什么完整底座中的状态与资源协调不能被一个引擎调用替代。数据共享缓冲和PCM传输没有画在这张控制关系图中。
+
+演示 cue：无
+讲述安排：按答疑问题选择展开，附录不计主讲时长。
+转场：设备迁移和状态保留看A5。
+技术边界：不声明RUNNING与真实首帧消费的固定总序；限定普通HPAE路径，其他类型有分支。
+
+依据：
+- StartAudioStream / 等待RUNNING L1398–1454：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/client/src/renderer_in_client_public.cpp#L1398
+- StartInner L1576–1606：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L1576
+- HpaeManager::Start L1830–1875：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_manager.cpp#L1830
+- RendererManager::Start L919–945：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L919
+- STARTED 状态回程 L411–428：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L411
+
+---
+
+## A5 A5  设备切换中的节点与状态衔接
+
+时间：0分钟
+
+设备切换首先涉及发现、可用性与策略路由，服务还要协调目标输出资源。这里展开的是已存在目标sink之间的一条普通可移动会话路径，不能当成全部蓝牙连接或所有设备切换的唯一流程。
+HpaeManager的MoveSinkInputByIndexOrName排队检查流与目标、可移动性和移动状态。旧RendererManager的MoveStreamSync在需要时准备SessionEffect迁移，保留shared_ptr指向的SinkInput，拆除旧处理图连接，并通过回调交出节点。它不是把应用流全部销毁再从头解码。
+目标侧AddSingleNodeToSink更新设备类别、网络/地址等身份，按目标采样率和frameLen调整，通知UPDATE_SPAN_SIZE，创建对应处理簇。RUNNING会话再接入处理图。历史缓存和音效attach状态有条件保留，也有失效逻辑，不是所有缓存一概清空或一概复用。
+Manager还要更新session到sink及首选设备等映射，必要时在目标设备上重建会话音效绑定。AddNodeToSink自身仍会排队，管理层成功回报不能直接代表声学切换完成。
+这说明节点化让迁移可在明确职责边界内组织，但格式、身份、span、音效与状态必须一起衔接。路由选对、图接对、硬件可用，三者都需要验证。
+
+演示 cue：无
+讲述安排：按答疑问题选择展开，附录不计主讲时长。
+转场：源码版本与测量口径集中在A6。
+技术边界：迁移与设备可用性是不同层次；回报成功不等于声学切换结束。
+
+依据：
+- FetchOutputDevices L966–978：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/zone/src/audio_zone_service.cpp#L966
+- MoveSinkInputByIndexOrName L1065–1095：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_manager.cpp#L1065
+- MoveStreamSync L872–916：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L872
+- 目标Manager接入与映射更新 L1181–1227：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_manager.cpp#L1181
+- AddSingleNodeToSink L106–179：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L106
+- UPDATE_SPANSIZE 状态处理 L1157–1183：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/hpae_renderer_stream_impl.cpp#L1157
+
+---
+
+## A6 A6  源码版本与测量口径
+
+时间：0分钟
+
+本次当前框架固定到3a2688e805df970739e3b0cebf9cc05d8cb24e9b。历史框架5.1固定c42a228d60b64a90d6b05cf26278a89253e5310b，PA5.1仓库固定bc6e4fe58232dbad60ae6ee5d83cf46d0fe9b3ca，其README.OpenSource声明版本17.0。所有源码细节以这些快照为准，不用滚动master链接代替。
+讲述中有四种依据。源码事实解释职责、队列、节点和调用边界。时延降低、性能提升、功耗降低及抗抖动保持来自团队定性说明。音频是原创合成，用于听辨场景和模拟连续性。完整场景验证页是拟议方案，没有执行板端实验或生成产品成绩。
+响应时延必须给起点、终点和时钟对齐方法，例如应用事件到回环或声学检测。缓冲容量、当前库存、算法块长和设备提交粒度是不同量。PA请求的prebuf/minreq/tlength不能直接作端到端时延。稳定性比较必须固定负载与扰动并观察欠载或断音；CPU和能量要带测量范围、窗口及环境条件。
+产品构建开关、不同播放类型以及旧新版本的其他变化也必须记录。没有这些条件，就不应把局部代码结构和版本差值包装成准确的产品收益幅度。附录和随附证据表保留原始位置，便于讲师继续补充真实产品资料。
+
+演示 cue：无
+讲述安排：按答疑问题选择展开，附录不计主讲时长。
+转场：返回主讲收束页或结束答疑。
+技术边界：不确认商业产品部署或未披露量化数据，PA版本声明不代表原封不动上游实现。
+
+依据：
+- GetPlaybackManager L29–64：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/i_stream_manager.cpp#L29
+- GetPlaybackManager L22–39：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/src/i_stream_manager.cpp#L22
+- ConnectRendererStreamToPA L673–702：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/src/pa_adapter_manager.cpp#L673
+- PA版本声明：https://gitcode.com/openharmony/third_party_pulseaudio/blob/bc6e4fe58232dbad60ae6ee5d83cf46d0fe9b3ca/README.OpenSource

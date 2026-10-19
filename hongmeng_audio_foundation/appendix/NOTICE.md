@@ -1,0 +1,1 @@
+框架源码摘录来自OpenHarmony multimedia_audio_framework，保留固定位置与原有版权归属，按Apache-2.0使用。PA版本声明只作版本核验，PA上游及集成仓库许可证为LGPL-2.1。未将三方源码用于音频生成。

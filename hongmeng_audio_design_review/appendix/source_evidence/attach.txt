@@ -1,0 +1,75 @@
+AddSingleNodeToSink L106–179：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L106
+106: 
+107: int32_t HpaeRendererManager::AddNodeToSink(const std::shared_ptr<HpaeSinkInputNode> &node)
+108: {
+109:     auto request = [this, node]() { AddSingleNodeToSink(node); };
+110:     SendRequest(request, __func__);
+111:     return SUCCESS;
+112: }
+113: 
+114: void HpaeRendererManager::AddSingleNodeToSink(const std::shared_ptr<HpaeSinkInputNode> &node, bool isConnect)
+115: {
+116:     Trace trace("HpaeRendererManager::AddSingleNodeToSink");
+117:     HpaeNodeInfo nodeInfo = node->GetNodeInfo();
+118:     nodeInfo.deviceClass = sinkInfo_.deviceClass;
+119:     nodeInfo.deviceNetId = sinkInfo_.deviceNetId;
+120:     // Remote sink routing ignores mac; keep volume-side info selection consistent with sink creation
+121:     nodeInfo.macAddress = sinkInfo_.macAddress;
+122:     nodeInfo.deviceName = sinkInfo_.deviceName;
+123:     nodeInfo.busAddress = sinkInfo_.busAddress;
+124:     if (Util::IsEnhancedRoutingSupported()) {
+125:         nodeInfo.deviceType = static_cast<int32_t>(renderDeviceType_);
+126:         nodeInfo.renderId = renderId_;
+127:     }
+128:     // no need history buffer in not offload sink, unless a session effect is
+129:     // attached — in that case keep the history buffer for the SE pipeline.
+130:     if (!node->HasSessionEffectAttachState()) {
+131:         nodeInfo.historyFrameCount = 0;
+132:     }
+133:     nodeInfo.statusCallback = weak_from_this();
+134:     nodeInfo.sceneType = TransToProperSceneType(nodeInfo.effectInfo.streamUsage, nodeInfo.effectInfo.effectScene);
+135:     TransNodeInfoForCollaboration(nodeInfo, isCollaborationEnabled_);
+136:     HpaeNodeInfo outNodeInfo;
+137:     outNodeInfo.frameLen = sinkInfo_.frameLen;
+138:     outNodeInfo.samplingRate = sinkInfo_.samplingRate;
+139:     AdjustFrameLen(nodeInfo, outNodeInfo);
+140:     node->SetNodeInfo(nodeInfo);
+141:     node->SetIsLowLatency(false);
+142:     uint32_t sessionId = nodeInfo.sessionId;
+143: 
+144:     sinkInputNodeMap_[sessionId] = node;
+145:     TriggerCallback(UPDATE_SPAN_SIZE, sessionId,
+146:         static_cast<uint32_t>(nodeInfo.frameLen), HPAE_STREAM_CLASS_TYPE_PLAY);
+147:     SetSessionState(sessionId, node->GetState());
+148:     sessionNodeMap_[sessionId].sceneType = nodeInfo.sceneType;
+149: #ifdef ENABLE_HIDUMP_DFX
+150:     OnNotifyDfxNodeAdmin(true, nodeInfo);
+151: #endif
+152: 
+153:     HILOG_COMM_INFO("[FinishMove] session :%{public}u to sink:%{public}s, sceneType is %{public}d",
+154:         sessionId, GetEncryptStr(sinkInfo_.deviceClass).c_str(), nodeInfo.sceneType);
+155:     CreateProcessClusterAndConnect(nodeInfo, isConnect);
+156:     if (isCollaborationEnabled_ == COLLABORATION_NEARLINK_OPEN) {
+157:         SetSessionFade(sessionId, OPERATION_STARTED);
+158:     }
+159: 
+160:     NotifyStreamChangeToSink(STREAM_CHANGE_TYPE_ADD, sessionId, ConvertHpaeToRendererState(node->GetState()),
+161:         node->GetAppUid());
+162:     node->OnStreamInfoChange(false);
+163:     UpdateClusterStreamInfo(nodeInfo.sceneType);
+164: }
+165: 
+166: void HpaeRendererManager::CreateProcessClusterAndConnect(HpaeNodeInfo &nodeInfo, bool isConnect)
+167: {
+168:     HpaeNodeInfo processNodeInfo = nodeInfo;
+169:     CreateProcessCluster(processNodeInfo);
+170: 
+171:     CHECK_AND_RETURN_LOG(isConnect == true, "not need connect session:%{public}d", nodeInfo.sessionId);
+172:     if (sessionNodeMap_[nodeInfo.sessionId].state == HPAE_SESSION_RUNNING) {
+173:         AUDIO_INFO_LOG("session:%{public}u connect to sink:%{public}s",
+174:             nodeInfo.sessionId, GetEncryptStr(sinkInfo_.deviceClass).c_str());
+175:         ConnectInputSession(nodeInfo.sessionId);
+176:     }
+177: }
+178: 
+179: void HpaeRendererManager::CreateDefaultProcessCluster(HpaeNodeInfo &nodeInfo)

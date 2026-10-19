@@ -1,0 +1,36 @@
+CreateRendererStream L273–307：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/hpae_adapter_manager.cpp#L273
+273: std::shared_ptr<IRendererStream> HpaeAdapterManager::CreateRendererStream(AudioProcessConfig processConfig,
+274:     const std::string &deviceName)
+275: {
+276:     std::lock_guard<std::mutex> lock(paElementsMutex_);
+277:     bool isCallbackMode = true;
+278:     bool isMoveAble = true;
+279:     size_t preBufSizeInBytes = 0;
+280:     if (managerType_ == DUP_PLAYBACK) {
+281:         // todo check
+282:         processConfig.isInnerCapturer = true;
+283:         isMoveAble = false;
+284:         AUDIO_INFO_LOG("Create dup playback renderer stream");
+285:     } else if (managerType_ == DUAL_PLAYBACK) {
+286:         isCallbackMode = false;
+287:         isMoveAble = false;
+288:         uint32_t sampleRate = processConfig.streamInfo.customSampleRate == 0 ?
+289:             processConfig.streamInfo.samplingRate : processConfig.streamInfo.customSampleRate;
+290:         size_t byteSizePerFrame = processConfig.streamInfo.channels *
+291:             static_cast<size_t>(Util::GetSamplePerFrame(processConfig.streamInfo.format));
+292:         preBufSizeInBytes = DUAL_STREAM_PREBUF_TIME_MS * sampleRate * byteSizePerFrame / AUDIO_MS_PER_S;
+293:     }
+294:     std::shared_ptr<HpaeRendererStreamImpl> rendererStream =
+295:         std::make_shared<HpaeRendererStreamImpl>(processConfig, isMoveAble, deviceName, isCallbackMode,
+296:         preBufSizeInBytes);
+297:     if (rendererStream->InitParams(deviceName) != SUCCESS) {
+298:         HILOG_COMM_ERROR("[CreateRendererStream]Create rendererStream Failed");
+299:         return nullptr;
+300:     }
+301:     return rendererStream;
+302: }
+303: 
+304: std::shared_ptr<ICapturerStream> HpaeAdapterManager::CreateCapturerStream(AudioProcessConfig processConfig,
+305:     const std::string &deviceName)
+306: {
+307:     std::lock_guard<std::mutex> lock(paElementsMutex_);

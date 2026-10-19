@@ -1,0 +1,12 @@
+InputPort::ReadPreOutputData L315–325：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/include/hpae_node.h#L315
+315: std::vector<T>& InputPort<T>::ReadPreOutputData()
+316: {
+317:     inputData_.clear();
+318:     for (auto &o : outputPorts_) {
+319:         T pcmData = o.first->PullOutputData();
+320:         if (pcmData != nullptr) {
+321:             inputData_.emplace_back(std::move(pcmData));
+322:         }
+323:     }
+324:     return inputData_;
+325: }
