@@ -1,0 +1,165 @@
+{
+  "n": 8,
+  "title": "Buffer 减在哪，仍保留在哪",
+  "takeaway": "删除旧线程中转，保留转换缓存与设备提交拼帧",
+  "objective": "删除旧线程中转，保留转换缓存与设备提交拼帧",
+  "script": "线程交接减少后，Buffer不能简单清零。当前服务端仍用共享缓冲承接应用数据，WriteData从缓冲读取、复制并推进读指针。处理图中格式转换节点有已经处理过的缓存，OutputPort仅在其输出队列为空时才触发节点DoProcess；Converter自己的processedBuffer_要积累到outputFrameLen20ms_才能提取并消费，这与OutputPort队列条件是两个不同判断。SinkOutput的ReadDataAndConvertFormat按currentSize_ < renderSize_循环：向前驱拉取、从float转换并累积到renderFrameData_，拼满后再调用RenderFrame。这里renderSize_是字节数，不是时长。图中三处是不同职责的库存：供数、格式适配和提交拼帧。\n旧普通主输出的primary.dq跨线程chunk交接已不在这条新调用链里。实际总Buffer数量、每段时延和端到端抗抖动能力需要同硬件同业务测量；用户团队给出的保持抗抖动是定性结论，静态代码只能解释这些保留缓存如何承担职责。试听素材可用来帮助新员工理解欠载声音，但不能冒充实机验证。",
+  "elements": [
+    [
+      "node",
+      64,
+      269,
+      270,
+      60,
+      "共享缓冲供数",
+      "navy",
+      23
+    ],
+    [
+      "node",
+      394,
+      269,
+      270,
+      60,
+      "Converter 缓存",
+      "blue",
+      23
+    ],
+    [
+      "node",
+      724,
+      269,
+      270,
+      60,
+      "SinkOutput 拼帧",
+      "teal",
+      23
+    ],
+    [
+      "node",
+      1050,
+      269,
+      165,
+      60,
+      "RenderFrame",
+      "teal",
+      19
+    ],
+    [
+      "arrow",
+      334,
+      299,
+      394,
+      299,
+      "blue",
+      false
+    ],
+    [
+      "arrow",
+      664,
+      299,
+      724,
+      299,
+      "blue",
+      false
+    ],
+    [
+      "arrow",
+      994,
+      299,
+      1050,
+      299,
+      "blue",
+      false
+    ],
+    [
+      "text",
+      64,
+      385,
+      535,
+      38,
+      "上游处理按需拉取",
+      27,
+      "blue",
+      true,
+      "left"
+    ],
+    [
+      "text",
+      64,
+      443,
+      535,
+      115,
+      "OutputPort 队列空才 DoProcess\nConverter 需已处理帧足够\n才可提取并消费缓存",
+      24,
+      "navy",
+      false,
+      "left"
+    ],
+    [
+      "line",
+      636,
+      390,
+      636,
+      585,
+      "light",
+      2
+    ],
+    [
+      "text",
+      685,
+      385,
+      530,
+      38,
+      "设备提交按块拼满",
+      27,
+      "teal",
+      true,
+      "left"
+    ],
+    [
+      "text",
+      685,
+      443,
+      530,
+      115,
+      "while currentSize_ < renderSize_\n拉取 → 转换 → 累积字节\n拼满后调用 RenderFrame",
+      24,
+      "navy",
+      false,
+      "left"
+    ],
+    [
+      "text",
+      64,
+      611,
+      1140,
+      35,
+      "移除旧 primary.dq 中转；保留的缓存承担供数、格式适配和提交拼帧",
+      22,
+      "navy",
+      true,
+      "left"
+    ]
+  ],
+  "minutes": 4,
+  "section": "源码设计 · 主讲",
+  "next": "继续沿实际调用展开。",
+  "footer": "静态源码解释缓存职责，不能证明端到端抗抖动等价",
+  "boundary": "未给默认帧数或毫秒值，因设备/配置可变。",
+  "cue": "",
+  "pacing": "先按图走一次调用，再解释条件与设计理由。",
+  "sources": [
+    "WriteData L1122–1161：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L1122",
+    "ExtractOutputFromProcessedBuffer L815–840：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_audio_format_converter_node.cpp#L815",
+    "InputPort::ReadPreOutputData L315–325：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/include/hpae_node.h#L315",
+    "ReadDataAndConvertFormat L680–707：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L680",
+    "SinkOutput::DoProcess / RenderFrame L121–165：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L121",
+    "ProcessRenderUseTiming L2449–2477：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L2449",
+    "OutputPort::PullOutputData L389–404：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/include/hpae_node.h#L389"
+  ],
+  "dark": false,
+  "from": "线程职责集中减少了一处中转。",
+  "titleSize": 40,
+  "revision": "technical-design-v2"
+}
