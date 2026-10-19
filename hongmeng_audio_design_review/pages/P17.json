@@ -1,0 +1,141 @@
+{
+  "n": 17,
+  "title": "A2  队列容量与耗尽路径",
+  "takeaway": "常规原子操作之外，扩容和背压失败必须纳入设计",
+  "objective": "常规原子操作之外，扩容和背压失败必须纳入设计",
+  "script": "无锁算法之外还要看容量。当前常量初始1000节点，90%使用阈值触发尝试扩容，每次最多增加1000，到5000封顶。若取空闲节点失败，PushRequest强制尝试扩容，再取一次；仍失败会上报队列异常并丢本次请求。TryExpandQueue在加锁前后均检查容量与阈值，锁内分配新块并追加到空闲节点链。\n因此不能说每个Push恒定时间或从不分配。正常发布用原子操作，而慢路径仍可能发生互斥与内存分配。调用方也不能从void PushRequest接口推断所有请求已可靠送达；容量监控与产品负载测试仍有必要。这些是当前实现常量，不是性能指标。",
+  "elements": [
+    [
+      "node",
+      64,
+      290,
+      265,
+      65,
+      "初始 1000 节点",
+      "blue",
+      23
+    ],
+    [
+      "node",
+      445,
+      290,
+      330,
+      65,
+      "使用量 ≥ 容量 × 90%",
+      "amber",
+      22
+    ],
+    [
+      "node",
+      897,
+      290,
+      318,
+      65,
+      "尝试扩容 +1000",
+      "teal",
+      23
+    ],
+    [
+      "arrow",
+      329,
+      322,
+      445,
+      322,
+      "blue",
+      false
+    ],
+    [
+      "arrow",
+      775,
+      322,
+      897,
+      322,
+      "blue",
+      false
+    ],
+    [
+      "text",
+      895,
+      363,
+      320,
+      66,
+      "expandMutex_ 锁内分配\n容量最多 5000 节点",
+      22,
+      "teal",
+      false,
+      "left"
+    ],
+    [
+      "text",
+      65,
+      445,
+      590,
+      44,
+      "没有空闲节点：强制尝试扩容",
+      25,
+      "navy",
+      true,
+      "left"
+    ],
+    [
+      "arrow",
+      650,
+      468,
+      900,
+      468,
+      "amber",
+      false
+    ],
+    [
+      "node",
+      897,
+      441,
+      318,
+      64,
+      "扩容后仍取不到空节点",
+      "amber",
+      21
+    ],
+    [
+      "text",
+      897,
+      535,
+      318,
+      75,
+      "报告队列异常\n丢弃本次 request",
+      24,
+      "amber",
+      true,
+      "left"
+    ],
+    [
+      "text",
+      64,
+      575,
+      740,
+      60,
+      "已有空闲节点的常规路径用原子操作\nTryExpandQueue 内仍有锁、分配与二次条件检查",
+      23,
+      "navy",
+      false,
+      "left"
+    ]
+  ],
+  "minutes": 0,
+  "section": "源码设计 · 条件与边界",
+  "next": "继续沿实际调用展开。",
+  "footer": "容量单位为请求节点；90%触发尝试，非无条件扩容",
+  "boundary": "达到上限不等于立即丢请求；仅无空闲节点且扩容后仍失败才丢弃。",
+  "cue": "",
+  "pacing": "先按图走一次调用，再解释条件与设计理由。",
+  "sources": [
+    "PushRequest / HandleRequests / TryExpandQueue L57–145：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L57",
+    "队列容量与扩容阈值 L28–38：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.h#L28",
+    "PushRequestNode 原子发布 L172–191：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L172"
+  ],
+  "dark": false,
+  "from": "按消息并发问题进入。",
+  "label": "A2",
+  "titleSize": 40,
+  "revision": "technical-design-v2"
+}
