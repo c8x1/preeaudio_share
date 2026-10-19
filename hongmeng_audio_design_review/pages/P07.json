@@ -1,0 +1,161 @@
+{
+  "n": 7,
+  "title": "新处理线程：消息与音频怎样共用执行循环",
+  "takeaway": "条件变量唤醒后先处理控制请求，再执行节点图",
+  "objective": "条件变量唤醒后先处理控制请求，再执行节点图",
+  "script": "HpaeSignalProcessThread的Run不是一个固定10ms定时器。线程等待在condition变量上，谓词包括running停止、Manager已在运行、有待处理消息、收到Notify。醒来后调用manager->HandleMsg()，随后调用manager->Process()，最后清recvSignal标记，进入下一轮。Manager的SendRequest负责把控制lambda送到无锁消息队列，并按路径Notify。\n这解释了为什么线程合并不等于在数据处理期间随意并发修改图：控制变更被投递到处理上下文，先处理消息，再拉音频数据。Notify本身仍持mutex并触发condition_variable，不能称整个控制链无锁。图中只说明该线程循环的源码顺序，设备RenderFrame耗时、其他设备线程与实时调度效果要另外测。下一页用SinkOutput的一次拉取说明这里的Process实际如何拿到足够设备帧。",
+  "elements": [
+    [
+      "node",
+      64,
+      269,
+      250,
+      67,
+      "条件等待",
+      "navy",
+      23
+    ],
+    [
+      "node",
+      360,
+      269,
+      250,
+      67,
+      "HandleMsg()",
+      "blue",
+      23
+    ],
+    [
+      "node",
+      656,
+      269,
+      250,
+      67,
+      "Process()",
+      "teal",
+      23
+    ],
+    [
+      "node",
+      952,
+      269,
+      263,
+      67,
+      "下一轮 / 等待",
+      "navy",
+      23
+    ],
+    [
+      "arrow",
+      314,
+      302,
+      360,
+      302,
+      "blue",
+      false
+    ],
+    [
+      "arrow",
+      610,
+      302,
+      656,
+      302,
+      "blue",
+      false
+    ],
+    [
+      "arrow",
+      906,
+      302,
+      952,
+      302,
+      "blue",
+      false
+    ],
+    [
+      "text",
+      65,
+      394,
+      535,
+      39,
+      "唤醒谓词（满足任一）",
+      26,
+      "blue",
+      true,
+      "left"
+    ],
+    [
+      "text",
+      65,
+      450,
+      540,
+      111,
+      "!running_  |  IsRunning()\nIsMsgProcessing()  |  recvSignal_",
+      25,
+      "navy",
+      false,
+      "left"
+    ],
+    [
+      "line",
+      635,
+      390,
+      635,
+      580,
+      "light",
+      2
+    ],
+    [
+      "text",
+      685,
+      394,
+      530,
+      39,
+      "Notify() 仍有锁",
+      26,
+      "amber",
+      true,
+      "left"
+    ],
+    [
+      "text",
+      685,
+      452,
+      530,
+      107,
+      "持 mutex_ 设置 recvSignal_\ncondition_.notify_all()",
+      25,
+      "navy",
+      false,
+      "left"
+    ],
+    [
+      "text",
+      64,
+      609,
+      1140,
+      39,
+      "没有固定 10ms tick；控制请求先 HandleMsg，随后才 Process 当前输出图",
+      22,
+      "navy",
+      true,
+      "left"
+    ]
+  ],
+  "minutes": 4,
+  "section": "源码设计 · 主讲",
+  "next": "继续沿实际调用展开。",
+  "footer": "Run等待谓词含 IsRunning/IsMsgProcessing/recvSignal；Notify仍持mutex",
+  "boundary": "处理顺序来自Run；不声明固定调度周期或系统硬实时。",
+  "cue": "",
+  "pacing": "先按图走一次调用，再解释条件与设计理由。",
+  "sources": [
+    "Notify / Run L75–125：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_signal_process_thread.cpp#L75",
+    "SendRequest L1755–1770：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1755",
+    "Process L1640–1664：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1640"
+  ],
+  "dark": false,
+  "from": "已建立自研目标与系统约束。",
+  "titleSize": 40,
+  "revision": "technical-design-v2"
+}
