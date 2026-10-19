@@ -1,0 +1,241 @@
+{
+  "n": 4,
+  "title": "5.1 方案：PA Start 的同步返回与操作回调",
+  "takeaway": "pa_stream_cork 提交后函数返回，状态在操作回调中更新",
+  "objective": "pa_stream_cork 提交后函数返回，状态在操作回调中更新",
+  "script": "在OpenHarmony 5.1中，AudioServer通过paDaemonThread运行ohos_pa_main，PA不是一个与鸿蒙音频底座隔离的外部黑盒。策略、RendererInServer仍在鸿蒙框架里。流实现PaRendererStreamImpl的Start持PaLockGuard保护mainloop，检查PA stream为READY，随后pa_stream_cork(stream,0,PAStreamStartSuccessCb)提交解除cork操作。Start函数成功返回只说明这一调用路径完成，后续PAStreamStartSuccessCb操作回调置RUNNING并调用statusCallback的OPERATION_STARTED。这个5.1回调收到success参数，但当前实现未检查它便更新状态，因此图和讲述只称“操作回调”，不据此声称底层实际输出成功。\n图中的PA异步操作是一条折叠泳道，不展开第三方库内部处理顺序。Start同步返回SUCCESS与后续操作回调分开画。5.1还在hdi_sink中承担混音/场景音效和HDI适配，下一页展示普通主输出真正把数据交给写线程的位置。这里对照的是控制请求进入旧执行模型的方式。PA本身包含异步消息机制，所以后文不会把旧方案概括为“所有队列都靠一把锁”。",
+  "elements": [
+    [
+      "text",
+      50,
+      245,
+      230,
+      48,
+      "RendererInServer",
+      23,
+      "navy",
+      true,
+      "center"
+    ],
+    [
+      "line",
+      165,
+      300,
+      165,
+      595,
+      "light",
+      2
+    ],
+    [
+      "text",
+      360,
+      245,
+      230,
+      48,
+      "PaRendererStreamImpl",
+      23,
+      "navy",
+      true,
+      "center"
+    ],
+    [
+      "line",
+      475,
+      300,
+      475,
+      595,
+      "light",
+      2
+    ],
+    [
+      "text",
+      705,
+      245,
+      230,
+      48,
+      "PA 异步操作",
+      23,
+      "navy",
+      true,
+      "center"
+    ],
+    [
+      "line",
+      820,
+      300,
+      820,
+      595,
+      "light",
+      2
+    ],
+    [
+      "text",
+      1010,
+      245,
+      230,
+      48,
+      "状态回程",
+      23,
+      "navy",
+      true,
+      "center"
+    ],
+    [
+      "line",
+      1125,
+      300,
+      1125,
+      595,
+      "light",
+      2
+    ],
+    [
+      "arrow",
+      165,
+      318,
+      475,
+      318,
+      "navy",
+      false
+    ],
+    [
+      "text",
+      175,
+      285,
+      295,
+      30,
+      "Start()",
+      22,
+      "navy",
+      false,
+      "left"
+    ],
+    [
+      "text",
+      485,
+      338,
+      350,
+      35,
+      "PaLockGuard(mainloop)",
+      22,
+      "amber",
+      false,
+      "left"
+    ],
+    [
+      "arrow",
+      475,
+      404,
+      820,
+      404,
+      "amber",
+      false
+    ],
+    [
+      "text",
+      485,
+      371,
+      330,
+      30,
+      "pa_stream_cork(0)",
+      21,
+      "amber",
+      false,
+      "left"
+    ],
+    [
+      "arrow",
+      475,
+      470,
+      165,
+      470,
+      "navy",
+      false
+    ],
+    [
+      "text",
+      175,
+      437,
+      295,
+      30,
+      "同步返回 SUCCESS",
+      21,
+      "navy",
+      false,
+      "left"
+    ],
+    [
+      "arrow",
+      820,
+      530,
+      475,
+      530,
+      "blue",
+      false
+    ],
+    [
+      "text",
+      485,
+      497,
+      330,
+      30,
+      "操作回调(success 参数)",
+      20,
+      "blue",
+      false,
+      "left"
+    ],
+    [
+      "arrow",
+      475,
+      583,
+      1125,
+      583,
+      "blue",
+      false
+    ],
+    [
+      "text",
+      485,
+      550,
+      635,
+      30,
+      "OnStatusUpdate(STARTED)",
+      20,
+      "blue",
+      false,
+      "left"
+    ],
+    [
+      "text",
+      64,
+      619,
+      1150,
+      36,
+      "回调会更新 RUNNING 并通知状态；5.1 实现未在回调中检查 success 参数",
+      21,
+      "navy",
+      true,
+      "left"
+    ]
+  ],
+  "minutes": 4,
+  "section": "源码设计 · 主讲",
+  "next": "继续沿实际调用展开。",
+  "footer": "5.1固定版本；PA异步操作内部未在本图展开；回调未检查 success 参数",
+  "boundary": "旧版5.1普通PA路径；操作回调不等于声学出声；回调未检查success参数。",
+  "cue": "",
+  "pacing": "先按图走一次调用，再解释条件与设计理由。",
+  "sources": [
+    "paDaemonThread / ohos_pa_main L261–273：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/src/audio_server.cpp#L261",
+    "Start / pa_stream_cork L154–182：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/src/pa_renderer_stream_impl.cpp#L154",
+    "PaLockGuard L25–63：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/include/pa_adapter_tools.h#L25",
+    "pa_stream_write / PAStreamWriteCb L699–755：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/src/pa_renderer_stream_impl.cpp#L699",
+    "SinkRenderPrimaryProcess L2315–2354：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L2315",
+    "PAStreamStartSuccessCb L835–855：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/src/pa_renderer_stream_impl.cpp#L835"
+  ],
+  "dark": false,
+  "from": "全局场景协同已经建立。",
+  "titleSize": 40,
+  "revision": "technical-design-v2"
+}
