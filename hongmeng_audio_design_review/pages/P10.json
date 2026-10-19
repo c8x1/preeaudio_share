@@ -1,0 +1,211 @@
+{
+  "n": 10,
+  "title": "节点图：输出端拉取，处理结果正向返回",
+  "takeaway": "节点负责处理；簇连接职责；Manager按会话和设备管理图",
+  "objective": "节点负责处理；簇连接职责；Manager按会话和设备管理图",
+  "script": "当前ProcessCluster::Connect建立真实的输入链：SinkInput到Converter，按条件加入SessionEffect，再经过LoudnessGain、Gain、sceneMixer，场景后还可接RenderEffect。OutputCluster连接场景转换、输出混音与SinkOutput，最后SinkOutput调用RenderFrame。图上箭头要区分两个方向：输出侧InputPort向前驱请求结果，结果帧沿节点连接正向返回。OutputPort有数据时可直接取；队列空才让所属节点DoProcess。\n节点化的扩展价值因此更具体：格式转换、增益、混音与音效职责分离，一个会话音效无需复制整条设备通路。Manager对场景簇与设备簇进行创建、映射和状态管理。说“节点类型可复用”不等于“所有会话共享同一个节点实例”；默认、bypass等过程簇有条件地创建和复用。下页看一个局部重连的真实代码分支。",
+  "elements": [
+    [
+      "text",
+      65,
+      258,
+      1100,
+      38,
+      "ProcessCluster：每路输入建立职责链",
+      26,
+      "blue",
+      true,
+      "left"
+    ],
+    [
+      "node",
+      64,
+      330,
+      160,
+      60,
+      "SinkInput",
+      "navy",
+      17
+    ],
+    [
+      "arrow",
+      224,
+      360,
+      257,
+      360,
+      "teal",
+      false
+    ],
+    [
+      "node",
+      257,
+      330,
+      160,
+      60,
+      "Converter",
+      "blue",
+      17
+    ],
+    [
+      "arrow",
+      417,
+      360,
+      450,
+      360,
+      "teal",
+      false
+    ],
+    [
+      "node",
+      450,
+      330,
+      160,
+      60,
+      "SessionEffect*",
+      "blue",
+      17
+    ],
+    [
+      "arrow",
+      610,
+      360,
+      643,
+      360,
+      "teal",
+      false
+    ],
+    [
+      "node",
+      643,
+      330,
+      160,
+      60,
+      "LoudnessGain",
+      "blue",
+      17
+    ],
+    [
+      "arrow",
+      803,
+      360,
+      836,
+      360,
+      "teal",
+      false
+    ],
+    [
+      "node",
+      836,
+      330,
+      160,
+      60,
+      "Gain",
+      "blue",
+      17
+    ],
+    [
+      "arrow",
+      996,
+      360,
+      1029,
+      360,
+      "teal",
+      false
+    ],
+    [
+      "node",
+      1029,
+      330,
+      160,
+      60,
+      "SceneMixer",
+      "blue",
+      17
+    ],
+    [
+      "text",
+      64,
+      427,
+      1120,
+      37,
+      "* 音效节点按会话配置可选；RenderEffect 在场景混音后按条件接入",
+      22,
+      "gray",
+      false,
+      "left"
+    ],
+    [
+      "text",
+      64,
+      491,
+      520,
+      37,
+      "拉取方向",
+      25,
+      "blue",
+      true,
+      "left"
+    ],
+    [
+      "arrow",
+      584,
+      530,
+      65,
+      530,
+      "blue",
+      false
+    ],
+    [
+      "text",
+      650,
+      491,
+      520,
+      37,
+      "PCM 结果方向",
+      25,
+      "teal",
+      true,
+      "left"
+    ],
+    [
+      "arrow",
+      650,
+      530,
+      1188,
+      530,
+      "teal",
+      false
+    ],
+    [
+      "text",
+      64,
+      598,
+      1140,
+      43,
+      "OutputCluster：场景转换 → 输出混音 → SinkOutput → RenderFrame",
+      23,
+      "navy",
+      true,
+      "left"
+    ]
+  ],
+  "minutes": 4,
+  "section": "源码设计 · 主讲",
+  "next": "继续沿实际调用展开。",
+  "footer": "蓝色向左表示拉取请求；绿色向右表示处理结果返回",
+  "boundary": "当前源码配置路径；不声称每个产品都启用所有音效。",
+  "cue": "",
+  "pacing": "先按图走一次调用，再解释条件与设计理由。",
+  "sources": [
+    "ProcessCluster::Connect L206–232：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_process_cluster.cpp#L206",
+    "OutputCluster::Connect L110–135：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_output_cluster.cpp#L110",
+    "CreateProcessClusterInner L179–240：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L179",
+    "InputPort::ReadPreOutputData L315–325：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/include/hpae_node.h#L315",
+    "OutputPort::PullOutputData L389–404：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/include/hpae_node.h#L389",
+    "SinkOutput::DoProcess / RenderFrame L121–165：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L121"
+  ],
+  "dark": false,
+  "from": "已经解释运行时的线程和消息改进。",
+  "titleSize": 40,
+  "revision": "technical-design-v2"
+}
