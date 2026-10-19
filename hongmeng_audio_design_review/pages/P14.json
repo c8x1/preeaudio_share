@@ -1,0 +1,146 @@
+{
+  "n": 14,
+  "title": "性能观测：分别记录控制确认和数据执行",
+  "takeaway": "用真实事件定位排队、供数与设备开销，再讨论整机收益",
+  "objective": "用真实事件定位排队、供数与设备开销，再讨论整机收益",
+  "script": "这页给可执行的观测位置，没有填入不存在的实测曲线。客户端StartAudioStream入口和IPC返回可观察管理调用；OnOperationHandled对应RUNNING。引擎可观察队列发布和HandleRequests消费、SinkInput首次取到数据、SinkOutput首次RenderFrame，外部回环或声学检测观察实际出声。左右是两组事件，不画RUNNING和首帧之间的固定时间顺序。\n同一时钟域中可计算入口到状态确认的管理响应、队列发布到消费的等待、供数到RenderFrame的处理段。声学端到端要对齐采集时钟，不能直接相减不同机器时间戳。旧PA的post/get也可作为交接事件，与新引擎同业务语义对照。CPU时间、线程唤醒、欠载和能量应在同硬件、同负载、同输出设备和音量下联合观察；Buffer和块长差异必须记录。用户团队确认方向为时延降低、性能提升和功耗下降，本轮没有产品数值，最终收益等待数据。\n采集时用session标识、可检测信号或标记帧把同一段目标音频关联起来，不能把启动后的静音首帧与目标声音的声学检测误配。",
+  "elements": [
+    [
+      "text",
+      65,
+      252,
+      520,
+      38,
+      "控制事件",
+      27,
+      "navy",
+      true,
+      "left"
+    ],
+    [
+      "text",
+      680,
+      252,
+      530,
+      38,
+      "数据与声学事件",
+      27,
+      "teal",
+      true,
+      "left"
+    ],
+    [
+      "line",
+      630,
+      255,
+      630,
+      595,
+      "light",
+      2
+    ],
+    [
+      "node",
+      64,
+      325,
+      535,
+      56,
+      "StartAudioStream 入口",
+      "navy",
+      21
+    ],
+    [
+      "node",
+      64,
+      402,
+      535,
+      56,
+      "IPC Start 返回",
+      "navy",
+      21
+    ],
+    [
+      "node",
+      64,
+      479,
+      535,
+      56,
+      "OnOperationHandled → RUNNING",
+      "navy",
+      21
+    ],
+    [
+      "node",
+      680,
+      325,
+      535,
+      56,
+      "SinkInput 首次消费数据",
+      "teal",
+      21
+    ],
+    [
+      "node",
+      680,
+      402,
+      535,
+      56,
+      "SinkOutput 首次 RenderFrame",
+      "teal",
+      21
+    ],
+    [
+      "node",
+      680,
+      479,
+      535,
+      56,
+      "外部检测实际出声",
+      "teal",
+      21
+    ],
+    [
+      "text",
+      64,
+      579,
+      540,
+      63,
+      "入口到 RUNNING：管理响应\n另记录队列发布 / 消费时间",
+      23,
+      "navy",
+      false,
+      "left"
+    ],
+    [
+      "text",
+      680,
+      579,
+      535,
+      63,
+      "入口到出声：端到端时延\n提交到出声：下游设备路径",
+      23,
+      "teal",
+      false,
+      "left"
+    ]
+  ],
+  "minutes": 4,
+  "section": "源码设计 · 主讲",
+  "next": "继续沿实际调用展开。",
+  "footer": "观测设计，尚未执行产品测量；左右并列不构成跨线程总序",
+  "boundary": "跨时钟域需对齐；CPU降低不能直接换算功耗百分比。",
+  "cue": "",
+  "pacing": "先按图走一次调用，再解释条件与设计理由。",
+  "sources": [
+    "StartAudioStream / 等待RUNNING L1398–1454：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/client/src/renderer_in_client_public.cpp#L1398",
+    "STARTED 状态回程 L411–428：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L411",
+    "PushRequest / HandleRequests / TryExpandQueue L57–145：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L57",
+    "ProcessRenderUseTiming L2449–2477：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L2449",
+    "ProcessHdiRendererPrimary / ThreadFuncWriteHDI L3821–3887：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L3821",
+    "SinkOutput::DoProcess / RenderFrame L121–165：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L121",
+    "WriteData L1122–1161：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L1122"
+  ],
+  "dark": false,
+  "from": "机制与收益的关系已经明确。",
+  "titleSize": 40,
+  "revision": "technical-design-v2"
+}
