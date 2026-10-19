@@ -1,0 +1,207 @@
+{
+  "n": 6,
+  "title": "同一普通输出路径：跨线程交接在哪里收拢",
+  "takeaway": "旧 render 到写线程的队列交接，变为当前处理线程内连续调用",
+  "objective": "旧 render 到写线程的队列交接，变为当前处理线程内连续调用",
+  "script": "将前后两个固定源码版本的普通主输出放在同一范围比较。旧hdi_sink生成chunk后经primary.dq交给HDI写线程。新HpaeSignalProcessThread先HandleMsg，再调用HpaeRendererManager::Process；随后进入OutputCluster的DoProcess、SinkOutput的DoProcess，并在这条调用链里RenderFrame。自研在这里收拢了旧渲染到HDI写线程的交接，减少一次可定位的排队/唤醒边界。\n图不声称操作系统、驱动或硬件再没有其他线程，也不将两个版本所有特殊播放路径混在一起。资源和时延收益由用户提供的是定性结论；静态代码只解释为什么这个改动可能改善延迟和调度开销。下一页拆开新处理线程：它怎样同时处理控制和数据，何时等待。",
+  "elements": [
+    [
+      "text",
+      65,
+      256,
+      520,
+      40,
+      "5.1 普通主输出",
+      27,
+      "navy",
+      true,
+      "left"
+    ],
+    [
+      "text",
+      690,
+      256,
+      520,
+      40,
+      "当前 HPAE 普通输出",
+      27,
+      "blue",
+      true,
+      "left"
+    ],
+    [
+      "line",
+      635,
+      260,
+      635,
+      603,
+      "light",
+      2
+    ],
+    [
+      "node",
+      64,
+      327,
+      515,
+      54,
+      "SinkRenderPrimary",
+      "navy",
+      23
+    ],
+    [
+      "arrow",
+      321,
+      381,
+      321,
+      398,
+      "navy",
+      false
+    ],
+    [
+      "node",
+      64,
+      398,
+      515,
+      54,
+      "primary.dq",
+      "navy",
+      23
+    ],
+    [
+      "arrow",
+      321,
+      452,
+      321,
+      469,
+      "navy",
+      false
+    ],
+    [
+      "node",
+      64,
+      469,
+      515,
+      54,
+      "HDI 写线程",
+      "navy",
+      23
+    ],
+    [
+      "arrow",
+      321,
+      523,
+      321,
+      540,
+      "navy",
+      false
+    ],
+    [
+      "node",
+      64,
+      540,
+      515,
+      54,
+      "RenderWrite",
+      "navy",
+      23
+    ],
+    [
+      "node",
+      690,
+      327,
+      515,
+      54,
+      "HpaeSignalProcessThread",
+      "blue",
+      23
+    ],
+    [
+      "arrow",
+      947,
+      381,
+      947,
+      398,
+      "blue",
+      false
+    ],
+    [
+      "node",
+      690,
+      398,
+      515,
+      54,
+      "HandleMsg() → Process()",
+      "blue",
+      23
+    ],
+    [
+      "arrow",
+      947,
+      452,
+      947,
+      469,
+      "blue",
+      false
+    ],
+    [
+      "node",
+      690,
+      469,
+      515,
+      54,
+      "OutputCluster → SinkOutput",
+      "blue",
+      23
+    ],
+    [
+      "arrow",
+      947,
+      523,
+      947,
+      540,
+      "blue",
+      false
+    ],
+    [
+      "node",
+      690,
+      540,
+      515,
+      54,
+      "RenderFrame()",
+      "blue",
+      23
+    ],
+    [
+      "text",
+      64,
+      615,
+      1150,
+      37,
+      "已减少的边界：旧主输出 render → primary.dq → HDI 写线程；驱动下游不在比较内",
+      21,
+      "navy",
+      true,
+      "left"
+    ]
+  ],
+  "minutes": 3,
+  "section": "源码设计 · 主讲",
+  "next": "继续沿实际调用展开。",
+  "footer": "比较范围：5.1普通主输出与当前HPAE普通输出；驱动下游另行测量",
+  "boundary": "两个版本的实现对照，不是相同设备上的实测数值。",
+  "cue": "",
+  "pacing": "先按图走一次调用，再解释条件与设计理由。",
+  "sources": [
+    "ProcessRenderUseTiming L2449–2477：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L2449",
+    "ProcessHdiRendererPrimary / ThreadFuncWriteHDI L3821–3887：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L3821",
+    "Notify / Run L75–125：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_signal_process_thread.cpp#L75",
+    "Process L1640–1664：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1640",
+    "OutputCluster::DoProcess L79–84：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_output_cluster.cpp#L79",
+    "SinkOutput::DoProcess / RenderFrame L121–165：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L121"
+  ],
+  "dark": false,
+  "from": "刚才定位了三种结构成本。",
+  "titleSize": 40,
+  "revision": "technical-design-v2"
+}
