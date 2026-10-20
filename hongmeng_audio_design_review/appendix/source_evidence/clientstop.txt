@@ -1,0 +1,51 @@
+StopAudioStream L1554–1603：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/client/src/renderer_in_client_public.cpp#L1554
+1554: bool RendererInClientInner::StopAudioStream()
+1555: {
+1556:     Trace trace("RendererInClientInner::StopAudioStream " + std::to_string(sessionId_));
+1557:     MonitorMutePlay(true);
+1558:     AUDIO_INFO_LOG("Stop begin for sessionId %{public}d uid: %{public}d", sessionId_, clientUid_);
+1559:     std::unique_lock<std::mutex> statusLock(statusMutex_);
+1560:     std::unique_lock<std::mutex> lock(writeMutex_, std::defer_lock);
+1561:     if (!offloadEnable_ && !rendererInfo_.isStatic) {
+1562:         lock.lock();
+1563:         DrainAudioStreamInner(true);
+1564:     }
+1565: 
+1566:     if (state_ == STOPPED) {
+1567:         AUDIO_INFO_LOG("Renderer in client is already stopped");
+1568:         streamFocusState_ = static_cast<StreamFocusState>(STOPPED);
+1569:         return true;
+1570:     }
+1571:     CHECK_AND_CALL_FUNC_RETURN_RET_LOG(state_ == RUNNING || state_ == PAUSED, false,
+1572:         SendAudioErrorEventAndProcessOther(static_cast<int32_t>(clientUid_),
+1573:             PLAY_STOP_ILLEGAL_STATE, "Illegal state", true, state_),
+1574:         "Stop failed. Illegal state:%{public}u", state_.load());
+1575: 
+1576:     std::unique_lock<std::mutex> waitLock(callServerMutex_);
+1577:     UpdateStopState();
+1578:     CHECK_AND_CALL_FUNC_RETURN_RET_LOG(ipcStream_ != nullptr, false,
+1579:         StreamDfxManager::GetInstance().SendAudioErrorEvent(static_cast<int32_t>(clientUid_),
+1580:             PLAY_STOP_NULL_POINTER, "ipcStream is not inited", true),
+1581:         "ipcStream is not inited!");
+1582:     int32_t ret = ipcStream_->Stop();
+1583:     CHECK_AND_CALL_FUNC_RETURN_RET_LOG(ret == SUCCESS, false,
+1584:         StreamDfxManager::GetInstance().SendAudioErrorEvent(static_cast<int32_t>(clientUid_),
+1585:             PLAY_STOP_OPERATION_FAILED, "Stop call server failed", true),
+1586:         "Stop call server failed:%{public}u", ret);
+1587:     
+1588:     bool stopWaiting = callServerCV_.wait_for(waitLock, std::chrono::milliseconds(OPERATION_TIMEOUT_IN_MS), [this] {
+1589:         return state_ == STOPPED; // will be false when got notified.
+1590:     });
+1591:     if (!stopWaiting) {
+1592:         StreamDfxManager::GetInstance().SendAudioErrorEvent(static_cast<int32_t>(clientUid_),
+1593:             PLAY_STOP_TIMEOUT, "Stop timeout", true);
+1594:         AUDIO_ERR_LOG("Stop failed: timeout");
+1595:         UpdateStreamState(INVALID);
+1596:         return false;
+1597:     }
+1598: 
+1599:     waitLock.unlock();
+1600:     FutexTool::FutexWake(clientBuffer_->GetFutex());
+1601:     statusLock.unlock();
+1602:     HandleStopSuccess();
+1603:     return true;

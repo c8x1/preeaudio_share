@@ -1,0 +1,207 @@
+{
+  "n": 19,
+  "title": "A4  迟到的 Drain 回调，怎样避免复活已停流",
+  "takeaway": "服务状态检查挡住过时完成事件，体现跨层异步正确性",
+  "objective": "服务状态检查挡住过时完成事件，体现跨层异步正确性",
+  "script": "更深入看整个底座的一个真实竞态。客户端Stop对普通流会先尝试Drain；Drain等待超时并不阻断后续Stop，因此服务端先因Stop请求进入STOPPING，再因OPERATION_STOPPED完成回调进入STOPPED，之后Drain回调才到。服务端OnStatusUpdate处理OPERATION_DRAINED时明确检查当前status_仍为I_STATUS_DRAINING，才恢复STARTED并发送Drain完成；若已经STOPPED等其他状态，不按旧Drain结果恢复。\n这里画的是一种可能发生的交错，不是每次Stop必经的固定时序。条件检查让迟到完成事件不能覆盖更新的生命周期状态。它是当前公共流服务层的正确性设计，不应宣传为自研引擎独创。主讲Start展示管理状态与执行分叉，Pause展示设备内部过渡，这页则补公共服务如何处理过时异步事件。",
+  "elements": [
+    [
+      "text",
+      105,
+      245,
+      230,
+      48,
+      "客户端",
+      23,
+      "navy",
+      true,
+      "center"
+    ],
+    [
+      "line",
+      220,
+      300,
+      220,
+      610,
+      "light",
+      2
+    ],
+    [
+      "text",
+      525,
+      245,
+      230,
+      48,
+      "RendererInServer",
+      23,
+      "navy",
+      true,
+      "center"
+    ],
+    [
+      "line",
+      640,
+      300,
+      640,
+      610,
+      "light",
+      2
+    ],
+    [
+      "text",
+      945,
+      245,
+      230,
+      48,
+      "引擎回调",
+      23,
+      "navy",
+      true,
+      "center"
+    ],
+    [
+      "line",
+      1060,
+      300,
+      1060,
+      610,
+      "light",
+      2
+    ],
+    [
+      "arrow",
+      220,
+      315,
+      640,
+      315,
+      "blue",
+      false
+    ],
+    [
+      "text",
+      230,
+      282,
+      405,
+      30,
+      "Drain → I_STATUS_DRAINING",
+      21,
+      "blue",
+      false,
+      "left"
+    ],
+    [
+      "text",
+      65,
+      344,
+      540,
+      35,
+      "Drain等待超时；继续 Stop",
+      23,
+      "amber",
+      false,
+      "left"
+    ],
+    [
+      "arrow",
+      220,
+      410,
+      640,
+      410,
+      "navy",
+      false
+    ],
+    [
+      "text",
+      230,
+      377,
+      405,
+      30,
+      "Stop 请求 → I_STATUS_STOPPING",
+      20,
+      "navy",
+      false,
+      "left"
+    ],
+    [
+      "arrow",
+      1060,
+      465,
+      640,
+      465,
+      "teal",
+      false
+    ],
+    [
+      "text",
+      650,
+      432,
+      405,
+      30,
+      "OPERATION_STOPPED → STOPPED",
+      20,
+      "teal",
+      false,
+      "left"
+    ],
+    [
+      "arrow",
+      1060,
+      520,
+      640,
+      520,
+      "amber",
+      false
+    ],
+    [
+      "text",
+      650,
+      487,
+      405,
+      30,
+      "迟到的 OPERATION_DRAINED",
+      21,
+      "amber",
+      false,
+      "left"
+    ],
+    [
+      "node",
+      653,
+      555,
+      562,
+      60,
+      "仅 status_ == I_STATUS_DRAINING 才恢复 STARTED",
+      "teal",
+      18
+    ],
+    [
+      "text",
+      64,
+      622,
+      1150,
+      31,
+      "Stop 请求先进入 STOPPING；完成回调设置 STOPPED 后，迟到 Drain 不再恢复状态",
+      20,
+      "navy",
+      true,
+      "left"
+    ]
+  ],
+  "minutes": 0,
+  "section": "源码设计 · 条件与边界",
+  "next": "继续沿实际调用展开。",
+  "footer": "示例为可能的并发交错；I_STATUS_属于服务端，非客户端RUNNING",
+  "boundary": "公共服务层状态保护；不宣称自研新增或所有Stop都会Drain成功。",
+  "cue": "",
+  "pacing": "先按图走一次调用，再解释条件与设计理由。",
+  "sources": [
+    "Drain迟到回调的状态保护 L450–477：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L450",
+    "StopAudioStream L1554–1603：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/client/src/renderer_in_client_public.cpp#L1554",
+    "Stop设置STOPPING L1889–1916、OPERATION_STOPPED处理 L437–443：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L437"
+  ],
+  "dark": false,
+  "from": "按跨层控制与成功语义问题进入。",
+  "label": "A4",
+  "titleSize": 40,
+  "revision": "technical-design-v2"
+}
