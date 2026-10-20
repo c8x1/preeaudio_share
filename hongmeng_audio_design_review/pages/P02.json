@@ -220,11 +220,11 @@
   ],
   "minutes": 4,
   "section": "源码设计 · 主讲",
-  "next": "继续沿实际调用展开。",
+  "next": "一次Start为何会出现两次排队？",
   "footer": "绿色数据轨在下方，蓝色控制轨在上方；框不表示独立进程",
   "boundary": "普通 HPAE 播放路径，图不表示进程划分。",
   "cue": "",
-  "pacing": "先按图走一次调用，再解释条件与设计理由。",
+  "pacing": "建议4分钟，包含逐步读图、停顿与互动。沿蓝色控制轨与绿色数据轨各走一次，指出数据没有进入管理请求队列。",
   "sources": [
     "WriteData L1122–1161：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L1122",
     "StartInner L1576–1606：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L1576",
@@ -235,7 +235,7 @@
     "FetchOutputDevices L966–978：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/zone/src/audio_zone_service.cpp#L966"
   ],
   "dark": false,
-  "from": "开场提出了应用、场景和设备变化中的体验要求。",
+  "from": "对象与通道地图建立后，沿Start进入实际时序。",
   "titleSize": 40,
   "revision": "technical-design-v2"
 }

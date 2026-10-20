@@ -236,11 +236,11 @@
   ],
   "minutes": 4,
   "section": "源码设计 · 主讲",
-  "next": "继续沿实际调用展开。",
+  "next": "主讲结束，进入5分钟问答；按问题选择A1–A6。",
   "footer": "对照固定版本与具体路径；机制说明不替代产品指标",
   "boundary": "旧PA具有模块化与异步队列；不把本页当成全部功能差异表。",
   "cue": "",
-  "pacing": "先按图走一次调用，再解释条件与设计理由。",
+  "pacing": "建议4分钟，包含逐步读图、停顿与互动。用四条已经展示的机制回顾，全套量化结果等待产品数据，不现场估算百分比。",
   "sources": [
     "ProcessRenderUseTiming L2449–2477：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L2449",
     "ProcessHdiRendererPrimary / ThreadFuncWriteHDI L3821–3887：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L3821",
@@ -252,7 +252,7 @@
     "RendererManager::Start L919–945：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L919"
   ],
   "dark": false,
-  "from": "已经明确收益评价和完整场景验证方法。",
+  "from": "依据前面真实机制收束自研演进。",
   "titleSize": 40,
   "revision": "technical-design-v2"
 }

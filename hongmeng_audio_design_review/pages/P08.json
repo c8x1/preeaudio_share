@@ -144,11 +144,11 @@
   ],
   "minutes": 4,
   "section": "源码设计 · 主讲",
-  "next": "继续沿实际调用展开。",
+  "next": "接着看控制请求进入该线程的队列算法。",
   "footer": "静态源码解释缓存职责，不能证明端到端抗抖动等价",
   "boundary": "未给默认帧数或毫秒值，因设备/配置可变。",
-  "cue": "",
-  "pacing": "先按图走一次调用，再解释条件与设计理由。",
+  "cue": "可选试听：先连续版本10秒，再人为模拟断音版本10秒；仅用于解释连续性，不代表产品测量。",
+  "pacing": "建议4分钟，包含逐步读图、停顿与互动。分别解释端口结果队列、Converter缓存和SinkOutput字节拼帧，不把三者混为一处。",
   "sources": [
     "WriteData L1122–1161：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L1122",
     "ExtractOutputFromProcessedBuffer L815–840：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_audio_format_converter_node.cpp#L815",
@@ -159,7 +159,7 @@
     "OutputPort::PullOutputData L389–404：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/include/hpae_node.h#L389"
   ],
   "dark": false,
-  "from": "线程职责集中减少了一处中转。",
+  "from": "线程合并之后，哪些Buffer仍有明确职责？",
   "titleSize": 40,
   "revision": "technical-design-v2"
 }

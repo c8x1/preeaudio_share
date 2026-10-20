@@ -197,11 +197,11 @@
   ],
   "minutes": 0,
   "section": "源码设计 · 条件与边界",
-  "next": "继续沿实际调用展开。",
+  "next": "队列容量和异常路径见A2。",
   "footer": "5.1普通流请求值；DUP/DUAL配置另有分支",
   "boundary": "20/80ms不是实测时延；新配置按设备变化。",
   "cue": "",
-  "pacing": "先按图走一次调用，再解释条件与设计理由。",
+  "pacing": "按答疑问题选讲，不计入55分钟主讲。先走正常路径，再解释条件与边界。",
   "sources": [
     "ConnectRendererStreamToPA L673–702：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/src/pa_adapter_manager.cpp#L673",
     "ReadDataAndConvertFormat L680–707：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L680",
@@ -209,7 +209,7 @@
     "UPDATE_SPANSIZE 状态处理 L1157–1183：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/hpae_renderer_stream_impl.cpp#L1157"
   ],
   "dark": false,
-  "from": "按线程与缓存问题进入。",
+  "from": "按Buffer数量、粒度与时延口径问题进入。",
   "label": "A1",
   "titleSize": 40,
   "revision": "technical-design-v2"

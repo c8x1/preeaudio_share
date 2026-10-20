@@ -179,11 +179,11 @@
   ],
   "minutes": 0,
   "section": "源码设计 · 条件与边界",
-  "next": "继续沿实际调用展开。",
+  "next": "公共服务层过时回调竞态见A4。",
   "footer": "橙色调用仅在空队列时发生；实际InputPort可有多个前驱",
   "boundary": "端口结果队列与Converter内部缓存是不同对象。",
   "cue": "",
-  "pacing": "先按图走一次调用，再解释条件与设计理由。",
+  "pacing": "按答疑问题选讲，不计入55分钟主讲。先走正常路径，再解释条件与边界。",
   "sources": [
     "InputPort::ReadPreOutputData L315–325：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/include/hpae_node.h#L315",
     "OutputPort::PullOutputData L389–404：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/include/hpae_node.h#L389",
@@ -191,7 +191,7 @@
     "ReadDataAndConvertFormat L680–707：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L680"
   ],
   "dark": false,
-  "from": "按节点次序与执行方向问题进入。",
+  "from": "按节点如何计算、是否每轮必算问题进入。",
   "label": "A3",
   "titleSize": 40,
   "revision": "technical-design-v2"

@@ -221,11 +221,11 @@
   ],
   "minutes": 4,
   "section": "源码设计 · 主讲",
-  "next": "继续沿实际调用展开。",
+  "next": "再从控制转到数据，定位旧主输出的线程交接。",
   "footer": "5.1固定版本；PA异步操作内部未在本图展开；回调未检查 success 参数",
   "boundary": "旧版5.1普通PA路径；操作回调不等于声学出声；回调未检查success参数。",
   "cue": "",
-  "pacing": "先按图走一次调用，再解释条件与设计理由。",
+  "pacing": "建议4分钟，包含逐步读图、停顿与互动。请区分同步返回、操作回调及声学出声；不要只依据函数名中的Success作判断。",
   "sources": [
     "paDaemonThread / ohos_pa_main L261–273：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/src/audio_server.cpp#L261",
     "Start / pa_stream_cork L154–182：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/src/pa_renderer_stream_impl.cpp#L154",
@@ -235,7 +235,7 @@
     "PAStreamStartSuccessCb L835–855：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/src/pa_renderer_stream_impl.cpp#L835"
   ],
   "dark": false,
-  "from": "全局场景协同已经建立。",
+  "from": "以相同操作观察旧PA控制路径。",
   "titleSize": 40,
   "revision": "technical-design-v2"
 }

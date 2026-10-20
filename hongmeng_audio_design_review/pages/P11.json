@@ -140,18 +140,18 @@
   ],
   "minutes": 3,
   "section": "源码设计 · 主讲",
-  "next": "继续沿实际调用展开。",
+  "next": "图的生命周期还要响应Pause和Stop。",
   "footer": "图示真实断边前检查；当前AISS格式有适用条件",
   "boundary": "局部函数失败保持旧边；不夸大为整图事务。",
   "cue": "",
-  "pacing": "先按图走一次调用，再解释条件与设计理由。",
+  "pacing": "建议3分钟，包含逐步读图、停顿与互动。请听众找出最后一个失败返回点与第一个DisConnect之间的关系。",
   "sources": [
     "CreateSessionEffectNode L547–582：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_process_cluster.cpp#L547",
     "SessionEffect 输入格式约束 L351–365：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_process_cluster.cpp#L351",
     "ProcessCluster::Connect L206–232：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_process_cluster.cpp#L206"
   ],
   "dark": false,
-  "from": "上一页建立了节点、簇和管理器的职责。",
+  "from": "通过一个真实新增功能理解局部连接管理。",
   "titleSize": 40,
   "revision": "technical-design-v2"
 }

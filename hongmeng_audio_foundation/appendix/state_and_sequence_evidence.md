@@ -135,3 +135,44 @@ RUNNING -- Stop  --> STOPPING -- Gain淡出完成 --> STOPPED
 5. **PA 与自研同尺度时序**：同样从 stream Start 到内核执行，比较 cork/callback 与 request/节点状态；同样从 mix 到 HDI，比较 dq 边界是否存在。
 
 以上机制不应全部声称是自研独创。共享框架状态管理体现整个底座的工程复杂度；自研重点落到可验证的调度重组、request queue、节点生命周期以及可组合的处理图上。
+
+## 8. PA 第三方库本体补核验（2026-10-19）
+
+仓库 `third_party_pulseaudio`，固定 SHA `bc6e4fe58232dbad60ae6ee5d83cf46d0fe9b3ca`。所有内容通过 `git show SHA:path` 读取，未依赖 Windows 不完整工作树。以下路径相对该第三方仓库。
+
+### P20 可直接绘制：旧 PA 移动通路的五步
+
+| 步骤/泳道 | 真实动作 | 固定源码行号 |
+|---|---|---|
+| 1. libpulse 客户端 | `pa_context_move_sink_input_by_index` 校验 context READY / index，创建 operation，打包 `PA_COMMAND_MOVE_SINK_INPUT`（input index、目标sink index），发送并注册 ACK callback | `src/pulse/introspect.c:2033–2056` |
+| 2. PA 主控制上下文 | `command_move_stream` 找到 sink_input 与目标 sink，调用 `pa_sink_input_move_to(si,sink,true)`；失败返回协议错误，正常最后 ACK | `src/pulsecore/protocol-native.c:4483–4499,4521` |
+| 3. 从旧 sink 摘除 | `start_move` 执行 move-start hook、移出旧 sink inputs、同步 `pa_asyncmsgq_send(START_MOVE)` 至旧 sink I/O 上下文；I/O detach、移出 thread_info.inputs、请求 rewind；返回控制侧后 `i->sink=NULL` | `src/pulsecore/sink-input.c:1867–1930`；`src/pulsecore/sink.c:2748–2790` |
+| 4. 接入新 sink | `finish_move` 验证兼容性、必要时尝试 reconfigure，调用 moving 回调；令 `i->sink=dest`、加入 dest inputs、重配 resampler/音量，再同步 `pa_asyncmsgq_send(FINISH_MOVE)` 至目标 I/O 上下文 | `src/pulsecore/sink-input.c:2159–2232` |
+| 5. 目标 I/O attach 与通知 | 目标 thread_info.inputs 加入同一个 input，attach；非 CORKED 时考虑新 sink latency、按条件 drop 并请求 rewind；更新 max rewind/request；控制侧随后 move-finish hook、subscription，再协议 ACK | `src/pulsecore/sink.c:2793–2866`；`src/pulsecore/sink-input.c:2234–2243`；`src/pulsecore/protocol-native.c:4521` |
+
+`pa_sink_input_move_to` 总入口 `src/pulsecore/sink-input.c:2272–2302`：同一个 sink 直接成功；校验 may_move_to；持有 input 引用；start_move 后 finish_move；finish 失败走 fail_move。图上不要画“销毁旧流并重建新流”：旧 PA 已复用同一个 sink_input 对象。新引擎对照点应是 **HpaeSinkInputNode + manager/cluster 的迁移与节点连接管理**，不是“旧引擎不支持移动或对象复用”。
+
+P20 推荐五泳道：`Policy/libpulse → PA control → old sink I/O → PA control → new sink I/O`。两次 asyncmsgq_send 是同步跨线程握手；返回 ACK 也不等于新扬声器声学输出已经稳定。图上旧 sink 和新 sink 的 I/O 上下文应分开。
+
+需保留的边界：
+
+- 可移动性/目标格式检查可能拒绝迁移，passthrough 不兼容会发送 FORMAT_LOST（2159–2180），不能承诺任意流都无损迁移。
+- 此 OH 分支 `sink-input.c:2223` 把 `restore_render_memblockq(i)` 注释为无需恢复；`sink.c:2768–2769` 注释掉 move_start_time 设置。不能照搬上游注释，声称该分支完整执行了其所有恢复算法。
+- `sink.c:2828–2847` 实际计算目标 latency 对应字节、条件 drop、请求 rewind；这是移动时序的真实复杂度，不能据此给出通用切换丢样量或 gap 时长。
+
+### P04 / 消息页可用：PA 队列本身也分层
+
+`src/pulsecore/asyncmsgq.c:124–153`：post 从 freelist 取消息（不足则分配），memchunk 只复制描述符并 memblock_ref；写端 mutex 保证 multiple-writer safe，然后 pa_asyncq_post。没有这里逐帧 memcpy 的证据。
+
+`asyncmsgq.c:156–196`：send 在写端 mutex 内 push，解锁后 semaphore_wait 等消费端完成；`239–246` 的 done 写返回值并 semaphore_post。因此“post异步 / send等待处理完成”可以明确画在时序箭头上。
+
+底层 `src/pulsecore/asyncq.c:140–159,231–255` 使用 atomic pointer CAS/load 维护槽位。准确对照是：**PA asyncmsgq 多写端包装有 mutex，HPAE 常规请求发布使用原子操作；不是 PA 从不用原子或所有队列都只有大锁。**
+
+### cork 命令最短真实链（可选）
+
+1. `src/pulse/stream.c:2334–2370` 打包 CORK_PLAYBACK_STREAM（channel、bool）、发协议、注册 ACK callback。
+2. `src/pulsecore/protocol-native.c:3856–3883` 校验并找到 playback_stream，调用 pa_sink_input_cork，再发 ACK。
+3. `src/pulsecore/sink-input.c:1732–1741` 映射 `CORKED/RUNNING`；`702–732` 控制上下文通过 asyncmsgq_send(SET_STATE) 同步交给 sink I/O，再更新控制侧 state。
+4. `sink-input.c:2390–2401` I/O 调用 set_state_within_thread；`2305–2345` cork 时先请求 rewind 再写 CORKED，uncork 时先写 RUNNING 再请求 remix/rewind。
+
+此时 cork ACK 位于该跨线程状态处理之后，但仍不是声学首帧完成；和新 HPAE 管理侧发 STARTED 的边界不同，值得如实讲清。

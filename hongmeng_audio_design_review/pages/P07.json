@@ -144,18 +144,18 @@
   ],
   "minutes": 4,
   "section": "源码设计 · 主讲",
-  "next": "继续沿实际调用展开。",
+  "next": "Process怎样拉到足够数据并适配设备提交块？",
   "footer": "Run等待谓词含 IsRunning/IsMsgProcessing/recvSignal；Notify仍持mutex",
   "boundary": "处理顺序来自Run；不声明固定调度周期或系统硬实时。",
   "cue": "",
-  "pacing": "先按图走一次调用，再解释条件与设计理由。",
+  "pacing": "建议4分钟，包含逐步读图、停顿与互动。让听众指出控制修改在Process之前消费，以及Notify仍有哪类同步。",
   "sources": [
     "Notify / Run L75–125：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_signal_process_thread.cpp#L75",
     "SendRequest L1755–1770：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1755",
     "Process L1640–1664：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1640"
   ],
   "dark": false,
-  "from": "已建立自研目标与系统约束。",
+  "from": "展开当前设备处理线程的真实Run循环。",
   "titleSize": 40,
   "revision": "technical-design-v2"
 }

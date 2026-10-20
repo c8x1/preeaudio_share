@@ -203,17 +203,17 @@
   ],
   "minutes": 3,
   "section": "源码设计 · 主讲",
-  "next": "继续沿实际调用展开。",
+  "next": "把这个交接与新HPAE同范围路径并列。",
   "footer": "5.1普通主输出；交接的是chunk引用，未据此推断测量瓶颈排名",
   "boundary": "旧方案具体路径；不能推广到所有PA设备、DIRECT或offload路径。",
   "cue": "",
-  "pacing": "先按图走一次调用，再解释条件与设计理由。",
+  "pacing": "建议3分钟，包含逐步读图、停顿与互动。指出primary.dq两侧执行上下文；询问chunk引用传递是否必然等于PCM复制。",
   "sources": [
     "ProcessRenderUseTiming L2449–2477：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L2449",
     "ProcessHdiRendererPrimary / ThreadFuncWriteHDI L3821–3887：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L3821"
   ],
   "dark": false,
-  "from": "已看过PA旧架构及已有能力。",
+  "from": "控制请求之外，旧普通输出还有具体数据交接。",
   "titleSize": 40,
   "revision": "technical-design-v2"
 }

@@ -113,11 +113,11 @@
   ],
   "minutes": 0,
   "section": "源码设计 · 条件与边界",
-  "next": "继续沿实际调用展开。",
+  "next": "结束答疑。",
   "footer": "完整commit、函数与行号均在演讲者备注和源码摘录；此页用于核验入口",
   "boundary": "OpenHarmony公开源码实现不自动等于所有内部产品配置。",
   "cue": "",
-  "pacing": "先按图走一次调用，再解释条件与设计理由。",
+  "pacing": "按答疑问题选讲，不计入55分钟主讲。先走正常路径，再解释条件与边界。",
   "sources": [
     "GetPlaybackManager L29–64：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/i_stream_manager.cpp#L29",
     "GetPlaybackManager L22–39：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/src/i_stream_manager.cpp#L22",
@@ -126,7 +126,7 @@
     "ProcessCluster::Connect L206–232：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_process_cluster.cpp#L206"
   ],
   "dark": false,
-  "from": "按版本、来源与测试口径问题进入。",
+  "from": "最后提供固定源码与适用范围的复核入口。",
   "label": "A6",
   "titleSize": 40,
   "revision": "technical-design-v2"

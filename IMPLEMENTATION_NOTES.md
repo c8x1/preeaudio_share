@@ -1,6 +1,36 @@
 # 鸿蒙音频底座技术分享 · Implementation Notes
 
-最后更新：2026-10-18。此文件是本轮制作的主记录，后续恢复任务先读此文件，再读当前页与 review 文件。旧版提纲、PPT 和脚本不再决定本轮内容。
+最后更新：2026-10-20。当前技术深化版位于 hongmeng_audio_design_review；旧版 hongmeng_audio_foundation 保留为历史基线。后续先读本文件的当前版本表，再读该页JSON和review。
+
+## 当前技术深化版（制作与逐页复审已完成）
+
+主讲15页建议55分钟（包含读图、互动与停顿），另5分钟答疑。A1–A6按需。已按用户反馈把真实时序、状态机、算法条件与新旧设计对照放到正文。每页均重新独立审查，旧版PASS没有沿用。
+
+| 页 | 当前主题 | 状态 |
+|---|---|---|
+| P01 | 一次 Start，什么时候才算开始播放？ | [PASS](hongmeng_audio_design_review/reviews/P01.md) |
+| P02 | 音频底座的对象与通信通道 | [PASS](hongmeng_audio_design_review/reviews/P02.md) |
+| P03 | Start 如何穿过策略、服务与两级队列 | [PASS](hongmeng_audio_design_review/reviews/P03.md) |
+| P04 | 5.1 方案：PA Start 的同步返回与操作回调 | [PASS](hongmeng_audio_design_review/reviews/P04.md) |
+| P05 | 5.1 普通主输出：渲染与 HDI 写分属两线程 | [PASS](hongmeng_audio_design_review/reviews/P05.md) |
+| P06 | 同一普通输出路径：跨线程交接在哪里收拢 | [PASS](hongmeng_audio_design_review/reviews/P06.md) |
+| P07 | 新处理线程：消息与音频怎样共用执行循环 | [PASS](hongmeng_audio_design_review/reviews/P07.md) |
+| P08 | Buffer 减在哪，仍保留在哪 | [PASS](hongmeng_audio_design_review/reviews/P08.md) |
+| P09 | 无锁消息队列：CAS 发布与批次消费 | [PASS](hongmeng_audio_design_review/reviews/P09.md) |
+| P10 | 节点图：输出端拉取，处理结果正向返回 | [PASS](hongmeng_audio_design_review/reviews/P10.md) |
+| P11 | 接入会话音效：成功创建后才重连 | [PASS](hongmeng_audio_design_review/reviews/P11.md) |
+| P12 | Pause / Stop：淡出完成后再断开节点 | [PASS](hongmeng_audio_design_review/reviews/P12.md) |
+| P13 | 切换设备：迁移输入对象，重建目标连接 | [PASS](hongmeng_audio_design_review/reviews/P13.md) |
+| P14 | 性能观测：分别记录控制确认和数据执行 | [PASS](hongmeng_audio_design_review/reviews/P14.md) |
+| P15 | 自研的技术价值，落在可验证的执行设计上 | [PASS](hongmeng_audio_design_review/reviews/P15.md) |
+| P16 | A1  Buffer 参数怎样避免比错 | [PASS](hongmeng_audio_design_review/reviews/P16.md) |
+| P17 | A2  队列容量与耗尽路径 | [PASS](hongmeng_audio_design_review/reviews/P17.md) |
+| P18 | A3  一次 Pull：有结果就取，空队列才计算 | [PASS](hongmeng_audio_design_review/reviews/P18.md) |
+| P19 | A4  迟到的 Drain 回调，怎样避免复活已停流 | [PASS](hongmeng_audio_design_review/reviews/P19.md) |
+| P20 | A5  设备迁移：PA 与 HPAE 的真实设计对照 | [PASS](hongmeng_audio_design_review/reviews/P20.md) |
+| P21 | A6  版本、路径与证据范围 | [PASS](hongmeng_audio_design_review/reviews/P21.md) |
+
+源文件：pages/Pxx.json 为权威内容，包含技术讲稿、来源与原生元素。构建：build/rebuild.ps1。全页重审记录：reviews/TECHNICAL_REDESIGN_AUDIT.md。GitHub：https://github.com/c8x1/preeaudio_share；P01–P21已逐页通过后提交推送，最终整合提交另记。
 
 ## 已确认的定位
 
@@ -32,7 +62,7 @@
 - 无锁队列常规发布/摘取用原子操作；扩容、Notify、共享缓冲读取仍有锁。不声称全链无锁、零拷贝。
 - 保持抗抖动是用户团队结论，静态结构不单独证明等价。
 
-## 已批准的完整提纲（15页主讲55分钟，另5分钟答疑）
+## 最初批准的提纲（历史记录；当前主题以顶部表格为准）
 
 ### 第一部分 · 一段声音，牵动整个音频底座（10分钟）
 
@@ -74,7 +104,7 @@ A1 新旧完整线程与Buffer对照；A2 无锁队列并发机制与异常边�
 5. 不复制旧版增量补丁结构。新PPT由独立构建脚本生成，图表/架构以原生对象保持可编辑。
 6. 需要氛围图可用gpt-image，架构不可伪造为生成图。音频为原创演示，不能冒充实机故障或测量结果。
 
-## 当前制作状态
+## 上一版制作状态（历史）
 
 | 页 | 状态 | 评审记录 |
 |---|---|---|
@@ -121,3 +151,13 @@ A1 新旧完整线程与Buffer对照；A2 无锁队列并发机制与异常边�
 P01 启动的三个观察点；P02 真实对象与通道；P03 启动的跨层时序；P04 PA 启动与回调；P05 PA 普通输出双线程；P06 新旧提交链对比；P07 新线程调度循环；P08 缓存与输出拼帧；P09 CAS 发布与批次消费；P10 节点图与反向拉取；P11 会话音效局部重连；P12 Pause/Stop 淡出状态机；P13 设备迁移时序；P14 延迟事件观测；P15 新旧设计证据总结；P16 缓存参数核对；P17 队列扩容状态；P18 Pull 缓存条件；P19 Start 精细异步关系；P20 迁移对象与旧 PA 对照；P21 分支和证据索引。
 
 本轮通过标准：图上有真实对象、调用或状态、条件和执行边界；技术页至少解释一个非显然设计；量化收益仍等待产品数据。每页新评审见新版 reviews/Pxx.md。
+
+## 2026-10-19 技术深化进度
+
+新版主讲 P01–P15 已全部经逐页 subagent 复审 PASS，并逐页推送到 https://github.com/c8x1/preeaudio_share 。附录P16–P21也已全部修订并复审PASS。每页正文的真实设计已提升到画面。P19改为迟到Drain回调竞态，避免重复主讲P03的Start时序。
+
+源码专家补核验了5.1第三方PA本体：旧PA迁移也复用同一sink_input，采用旧/目标sink I/O的同步消息握手。新版P20将如实比较同步与节点组织，不能把对象复用宣传为自研独有。
+
+- 2026-10-20：完成技术深化版21页逐页审查与推送，整套讲稿承接、输出文件与预览一致性验收已完成。P19改为迟到Drain回调竞态；P20以PA本体说明两种方案都复用输入对象。
+
+- 最终验收：21页/21份备注/21张预览/21页复审及整套叙事复审通过；668个原生可编辑对象，3个配套原创WAV。PPTX已完成工具导出、包结构/字体/几何/再导入核验，尚未在PowerPoint/WPS原生程序和现场音响验收。新完整输出：hongmeng_audio_design_review/鸿蒙音频底座_技术深化版.pptx；独立交付包：鸿蒙音频底座_技术深化版_全套交付.zip。

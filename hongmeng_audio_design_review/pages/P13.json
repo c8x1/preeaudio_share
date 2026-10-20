@@ -242,11 +242,11 @@
   ],
   "minutes": 4,
   "section": "源码设计 · 主讲",
-  "next": "继续沿实际调用展开。",
+  "next": "有了具体机制，应该分别观察哪些事件来验证收益？",
   "footer": "展开已有目标sink的可迁移播放会话；上游策略调用折叠",
   "boundary": "MOVE成功是管理语义；声学连续性需实机测量。",
   "cue": "",
-  "pacing": "先按图走一次调用，再解释条件与设计理由。",
+  "pacing": "建议4分钟，包含逐步读图、停顿与互动。指出保持的SinkInput对象与需要按目标设备重建的连接不是同一层概念。",
   "sources": [
     "FetchOutputDevices L966–978：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/zone/src/audio_zone_service.cpp#L966",
     "MoveSinkInputByIndexOrName L1065–1095：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_manager.cpp#L1065",
@@ -256,7 +256,7 @@
     "UPDATE_SPANSIZE 状态处理 L1157–1183：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/hpae_renderer_stream_impl.cpp#L1157"
   ],
   "dark": false,
-  "from": "三项创新已经回到全局协同。",
+  "from": "路由决策最终需要落实为输入对象与连接迁移。",
   "titleSize": 40,
   "revision": "technical-design-v2"
 }

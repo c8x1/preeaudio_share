@@ -1,9 +1,9 @@
 {
   "n": 9,
-  "title": "无锁消息队列：发布、摘批与逆序执行",
+  "title": "无锁消息队列：CAS 发布与批次消费",
   "takeaway": "常规链表头用 CAS；消费者摘批后反向遍历执行",
   "objective": "常规链表头用 CAS；消费者摘批后反向遍历执行",
-  "script": "管理请求例如Start会由SendRequest包装成lambda。生产者先从空闲节点链中原子摘取节点，填入request，然后通过CAS把节点压到请求头。多个线程竞争时，CAS成功次序定义入链先后；链表按头插法反转了它。消费者HandleRequests用CAS一次摘走当前整批，ProcessRequests沿链放进临时数组，再反向遍历执行，恢复批内发布次序。执行的每个lambda本身并非原子操作，也不承诺跨批次或外部业务请求的全局语义顺序。\n这就是无锁消息队列值得讲的算法细节：常规取节点、发布、摘批依赖原子操作，让控制请求进入处理侧不必围绕同一业务锁串行。但慢路径TryExpandQueue持expandMutex且分配新节点，处理线程的Notify也有锁；达到最大容量仍无空节点时会上报并丢弃请求。这里不说全链无锁、零分配。",
+  "script": "Start将工作包装成lambda，再通过SendRequest送入请求队列。生产者先从空闲节点链中原子摘取节点，填入request，然后通过CAS把节点压到请求头。多个线程竞争时，CAS成功次序定义入链先后；链表按头插法反转了它。消费者HandleRequests用CAS一次摘走当前整批，ProcessRequests沿链放进临时数组，再反向遍历执行，恢复批内发布次序。执行的每个lambda本身并非原子操作，也不承诺跨批次或外部业务请求的全局语义顺序。\n这就是无锁消息队列值得讲的算法细节：常规取节点、发布、摘批依赖原子操作，让控制请求进入处理侧不必围绕同一业务锁串行。但慢路径TryExpandQueue持expandMutex且分配新节点，处理线程的Notify也有锁；达到最大容量仍无空节点时会上报并丢弃请求。这里不说全链无锁、零分配。",
   "elements": [
     [
       "text",
@@ -173,11 +173,11 @@
   ],
   "minutes": 4,
   "section": "源码设计 · 主讲",
-  "next": "继续沿实际调用展开。",
+  "next": "消费者执行的lambda会操作怎样的处理图？",
   "footer": "CAS决定节点入链，批内逆序遍历恢复发布次序；慢路径有锁与分配",
   "boundary": "不保证所有请求必达或所有操作无锁。",
   "cue": "",
-  "pacing": "先按图走一次调用，再解释条件与设计理由。",
+  "pacing": "建议4分钟，包含逐步读图、停顿与互动。以两个依次成功CAS发布的请求说明头插反转与消费反向遍历，无需新增产品假数据。",
   "sources": [
     "SendRequest L1755–1770：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1755",
     "PushRequest / HandleRequests / TryExpandQueue L57–145：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L57",
@@ -186,7 +186,7 @@
     "队列容量与扩容阈值 L28–38：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.h#L28"
   ],
   "dark": false,
-  "from": "线程与Buffer精简已经解释完毕。",
+  "from": "从调度循环转到原子发布与批次消费。",
   "titleSize": 40,
   "revision": "technical-design-v2"
 }

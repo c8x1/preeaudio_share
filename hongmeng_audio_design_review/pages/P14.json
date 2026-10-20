@@ -125,11 +125,11 @@
   ],
   "minutes": 4,
   "section": "源码设计 · 主讲",
-  "next": "继续沿实际调用展开。",
+  "next": "回顾已经用源码解释清楚的新旧设计差异。",
   "footer": "观测设计，尚未执行产品测量；左右并列不构成跨线程总序",
   "boundary": "跨时钟域需对齐；CPU降低不能直接换算功耗百分比。",
   "cue": "",
-  "pacing": "先按图走一次调用，再解释条件与设计理由。",
+  "pacing": "建议4分钟，包含逐步读图、停顿与互动。让听众选择要测管理响应还是声学端到端，并解释时钟对齐和目标声音标记。",
   "sources": [
     "StartAudioStream / 等待RUNNING L1398–1454：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/client/src/renderer_in_client_public.cpp#L1398",
     "STARTED 状态回程 L411–428：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L411",
@@ -140,7 +140,7 @@
     "WriteData L1122–1161：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L1122"
   ],
   "dark": false,
-  "from": "机制与收益的关系已经明确。",
+  "from": "把架构变化映射到可采集事件与同口径实验。",
   "titleSize": 40,
   "revision": "technical-design-v2"
 }

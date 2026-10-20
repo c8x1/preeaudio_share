@@ -39,7 +39,7 @@ const candidate=path.join(ROOT,'build/.private',selected?`P${String(selected).pa
 await(await PresentationFile.exportPptx(pres)).save(candidate);console.log(`Built ${pres.slides.items.length} slide(s), rendered ${arg}`);
 if(selected===null){
  const {finalizePresentation}=await import(pathToFileURL(path.join(SKILL,'container_tools/artifact_tool_utils.mjs')).href);
- let finalPath=path.join(ROOT,'鸿蒙音频底座_协同与自研演进.pptx');try{await fs.access(finalPath);finalPath=path.join(ROOT,'鸿蒙音频底座_协同与自研演进_'+Date.now()+'.pptx')}catch{}
+ let finalPath=path.join(ROOT,'鸿蒙音频底座_技术深化版.pptx');try{await fs.access(finalPath);finalPath=path.join(ROOT,'鸿蒙音频底座_技术深化版_'+Date.now()+'.pptx')}catch{}
  const r=await finalizePresentation({workspaceDir:path.dirname(ROOT),candidatePath:candidate,finalPath,pythonExecutable:PY,integrityValidatorPath:path.join(SKILL,'container_tools/inspect_presentation_package_integrity.py'),layoutValidatorPath:path.join(SKILL,'container_tools/inspect_presentation_layout_geometry.py'),layoutArgs:['--expected-slide-size-emu','12192000,6858000','--validate-heading-fit'],explicitTotalSlideCount:pages.length,requiredNativeTableOwnerSlides:[],requiredNativeChartOwnerSlides:[],fontPolicy:{basis:'design',families:['Microsoft YaHei']},verifyArtifactToolImport:true,receiptPath:path.join(ROOT,'..','.codex-finalizer','foundation-'+Date.now()+'.json')});
  await fs.writeFile(path.join(ROOT,'build/final.json'),JSON.stringify({file:path.basename(finalPath),sha256:r.finalSha256},null,2));console.log('Finalized '+finalPath);
 }

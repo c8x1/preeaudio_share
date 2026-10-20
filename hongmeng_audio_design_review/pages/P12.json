@@ -188,18 +188,18 @@
   ],
   "minutes": 4,
   "section": "源码设计 · 主讲",
-  "next": "继续沿实际调用展开。",
+  "next": "同样的连接管理怎样服务系统设备切换？",
   "footer": "普通活跃流正常路径；实际条件旁路在下方；状态属于设备RendererManager",
   "boundary": "管理状态回程/超时与真实设备完成分开；旧PA也有淡出。",
   "cue": "",
-  "pacing": "先按图走一次调用，再解释条件与设计理由。",
+  "pacing": "建议4分钟，包含逐步读图、停顿与互动。沿Pause一行走正常路径，再用“淡出中恢复Start”解释过时回调保护。",
   "sources": [
     "SetSessionFade L1861–1904：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1861",
     "OnFadeDone L1777–1804：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1777",
     "Pause L1110–1141：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1110"
   ],
   "dark": false,
-  "from": "已经讲完线程/Buffer、消息队列与节点复用。",
+  "from": "把状态过渡与淡出、断图联系起来。",
   "titleSize": 40,
   "revision": "technical-design-v2"
 }

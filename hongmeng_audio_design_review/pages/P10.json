@@ -191,11 +191,11 @@
   ],
   "minutes": 4,
   "section": "源码设计 · 主讲",
-  "next": "继续沿实际调用展开。",
+  "next": "用会话音效插入，看节点化怎样集中修改范围。",
   "footer": "蓝色向左表示拉取请求；绿色向右表示处理结果返回",
   "boundary": "当前源码配置路径；不声称每个产品都启用所有音效。",
   "cue": "",
-  "pacing": "先按图走一次调用，再解释条件与设计理由。",
+  "pacing": "建议4分钟，包含逐步读图、停顿与互动。先正向读数据处理职责，再从输出端反向沿连接指出拉取请求。",
   "sources": [
     "ProcessCluster::Connect L206–232：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_process_cluster.cpp#L206",
     "OutputCluster::Connect L110–135：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_output_cluster.cpp#L110",
@@ -205,7 +205,7 @@
     "SinkOutput::DoProcess / RenderFrame L121–165：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L121"
   ],
   "dark": false,
-  "from": "已经解释运行时的线程和消息改进。",
+  "from": "把任务执行落实到真实节点连接与数据拉取。",
   "titleSize": 40,
   "revision": "technical-design-v2"
 }

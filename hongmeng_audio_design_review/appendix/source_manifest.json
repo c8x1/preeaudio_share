@@ -1,324 +1,151 @@
 {
-  "focus": [
-    "3a2688e805df970739e3b0cebf9cc05d8cb24e9b",
-    "services/audio_policy/server/domain/zone/src/audio_zone_service.cpp",
-    818,
-    853,
-    "ActivateAudioInterrupt"
+  "P01": [
+    "StartAudioStream / 等待RUNNING L1398–1454：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/client/src/renderer_in_client_public.cpp#L1398",
+    "HpaeManager::Start L1830–1875：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_manager.cpp#L1830",
+    "STARTED 状态回程 L411–428：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L411",
+    "SinkOutput::DoProcess / RenderFrame L121–165：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L121"
   ],
-  "route": [
-    "3a2688e805df970739e3b0cebf9cc05d8cb24e9b",
-    "services/audio_policy/server/domain/zone/src/audio_zone_service.cpp",
-    966,
-    978,
-    "FetchOutputDevices"
+  "P02": [
+    "WriteData L1122–1161：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L1122",
+    "StartInner L1576–1606：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L1576",
+    "HpaeManager::Start L1830–1875：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_manager.cpp#L1830",
+    "RendererManager::Start L919–945：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L919",
+    "SinkOutput::DoProcess / RenderFrame L121–165：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L121",
+    "ActivateAudioInterrupt L818–853：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/zone/src/audio_zone_service.cpp#L818",
+    "FetchOutputDevices L966–978：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/zone/src/audio_zone_service.cpp#L966"
   ],
-  "volume": [
-    "3a2688e805df970739e3b0cebf9cc05d8cb24e9b",
-    "services/audio_policy/server/domain/zone/src/audio_zone_service.cpp",
-    720,
-    734,
-    "SetSystemVolumeLevel"
+  "P03": [
+    "StartAudioStream / 等待RUNNING L1398–1454：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/client/src/renderer_in_client_public.cpp#L1398",
+    "StartInner L1576–1606：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L1576",
+    "HpaeManager::Start L1830–1875：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_manager.cpp#L1830",
+    "RendererManager::Start L919–945：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L919",
+    "STARTED 状态回程 L411–428：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L411"
   ],
-  "start": [
-    "3a2688e805df970739e3b0cebf9cc05d8cb24e9b",
-    "services/audio_service/server/src/renderer_in_server.cpp",
-    1576,
-    1606,
-    "StartInner"
+  "P04": [
+    "paDaemonThread / ohos_pa_main L261–273：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/src/audio_server.cpp#L261",
+    "Start / pa_stream_cork L154–182：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/src/pa_renderer_stream_impl.cpp#L154",
+    "PaLockGuard L25–63：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/include/pa_adapter_tools.h#L25",
+    "pa_stream_write / PAStreamWriteCb L699–755：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/src/pa_renderer_stream_impl.cpp#L699",
+    "SinkRenderPrimaryProcess L2315–2354：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L2315",
+    "PAStreamStartSuccessCb L835–855：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/src/pa_renderer_stream_impl.cpp#L835"
   ],
-  "buffer": [
-    "3a2688e805df970739e3b0cebf9cc05d8cb24e9b",
-    "services/audio_service/server/src/renderer_in_server.cpp",
-    1122,
-    1161,
-    "WriteData"
+  "P05": [
+    "ProcessRenderUseTiming L2449–2477：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L2449",
+    "ProcessHdiRendererPrimary / ThreadFuncWriteHDI L3821–3887：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L3821"
   ],
-  "entry": [
-    "3a2688e805df970739e3b0cebf9cc05d8cb24e9b",
-    "services/audio_service/server/src/i_stream_manager.cpp",
-    29,
-    64,
-    "GetPlaybackManager"
+  "P06": [
+    "ProcessRenderUseTiming L2449–2477：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L2449",
+    "ProcessHdiRendererPrimary / ThreadFuncWriteHDI L3821–3887：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L3821",
+    "Notify / Run L75–125：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_signal_process_thread.cpp#L75",
+    "Process L1640–1664：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1640",
+    "OutputCluster::DoProcess L79–84：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_output_cluster.cpp#L79",
+    "SinkOutput::DoProcess / RenderFrame L121–165：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L121"
   ],
-  "adapter": [
-    "3a2688e805df970739e3b0cebf9cc05d8cb24e9b",
-    "services/audio_service/server/src/hpae_adapter_manager.cpp",
-    273,
-    307,
-    "CreateRendererStream"
+  "P07": [
+    "Notify / Run L75–125：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_signal_process_thread.cpp#L75",
+    "SendRequest L1755–1770：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1755",
+    "Process L1640–1664：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1640"
   ],
-  "queue": [
-    "3a2688e805df970739e3b0cebf9cc05d8cb24e9b",
-    "services/audio_engine/utils/hpae_no_lock_queue.cpp",
-    57,
-    145,
-    "PushRequest / HandleRequests / TryExpandQueue"
+  "P08": [
+    "WriteData L1122–1161：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L1122",
+    "ExtractOutputFromProcessedBuffer L815–840：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_audio_format_converter_node.cpp#L815",
+    "InputPort::ReadPreOutputData L315–325：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/include/hpae_node.h#L315",
+    "ReadDataAndConvertFormat L680–707：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L680",
+    "SinkOutput::DoProcess / RenderFrame L121–165：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L121",
+    "ProcessRenderUseTiming L2449–2477：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L2449",
+    "OutputPort::PullOutputData L389–404：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/include/hpae_node.h#L389"
   ],
-  "send": [
-    "3a2688e805df970739e3b0cebf9cc05d8cb24e9b",
-    "services/audio_engine/manager/src/hpae_renderer_manager.cpp",
-    1755,
-    1770,
-    "SendRequest"
+  "P09": [
+    "SendRequest L1755–1770：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1755",
+    "PushRequest / HandleRequests / TryExpandQueue L57–145：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L57",
+    "PushRequestNode 原子发布 L172–191：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L172",
+    "ProcessRequests 批量执行 L227–262：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L227",
+    "队列容量与扩容阈值 L28–38：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.h#L28"
   ],
-  "run": [
-    "3a2688e805df970739e3b0cebf9cc05d8cb24e9b",
-    "services/audio_engine/manager/src/hpae_signal_process_thread.cpp",
-    75,
-    125,
-    "Notify / Run"
+  "P10": [
+    "ProcessCluster::Connect L206–232：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_process_cluster.cpp#L206",
+    "OutputCluster::Connect L110–135：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_output_cluster.cpp#L110",
+    "CreateProcessClusterInner L179–240：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L179",
+    "InputPort::ReadPreOutputData L315–325：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/include/hpae_node.h#L315",
+    "OutputPort::PullOutputData L389–404：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/include/hpae_node.h#L389",
+    "SinkOutput::DoProcess / RenderFrame L121–165：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L121"
   ],
-  "process": [
-    "3a2688e805df970739e3b0cebf9cc05d8cb24e9b",
-    "services/audio_engine/manager/src/hpae_renderer_manager.cpp",
-    1640,
-    1664,
-    "Process"
+  "P11": [
+    "CreateSessionEffectNode L547–582：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_process_cluster.cpp#L547",
+    "SessionEffect 输入格式约束 L351–365：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_process_cluster.cpp#L351",
+    "ProcessCluster::Connect L206–232：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_process_cluster.cpp#L206"
   ],
-  "out": [
-    "3a2688e805df970739e3b0cebf9cc05d8cb24e9b",
-    "services/audio_engine/node/src/hpae_output_cluster.cpp",
-    79,
-    84,
-    "OutputCluster::DoProcess"
+  "P12": [
+    "SetSessionFade L1861–1904：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1861",
+    "OnFadeDone L1777–1804：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1777",
+    "Pause L1110–1141：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1110"
   ],
-  "sink": [
-    "3a2688e805df970739e3b0cebf9cc05d8cb24e9b",
-    "services/audio_engine/node/src/hpae_sink_output_node.cpp",
-    121,
-    165,
-    "SinkOutput::DoProcess / RenderFrame"
+  "P13": [
+    "FetchOutputDevices L966–978：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/zone/src/audio_zone_service.cpp#L966",
+    "MoveSinkInputByIndexOrName L1065–1095：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_manager.cpp#L1065",
+    "MoveStreamSync L872–916：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L872",
+    "目标Manager接入与映射更新 L1181–1227：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_manager.cpp#L1181",
+    "AddSingleNodeToSink L106–179：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L106",
+    "UPDATE_SPANSIZE 状态处理 L1157–1183：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/hpae_renderer_stream_impl.cpp#L1157"
   ],
-  "stitch": [
-    "3a2688e805df970739e3b0cebf9cc05d8cb24e9b",
-    "services/audio_engine/node/src/hpae_sink_output_node.cpp",
-    680,
-    707,
-    "ReadDataAndConvertFormat"
+  "P14": [
+    "StartAudioStream / 等待RUNNING L1398–1454：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/client/src/renderer_in_client_public.cpp#L1398",
+    "STARTED 状态回程 L411–428：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L411",
+    "PushRequest / HandleRequests / TryExpandQueue L57–145：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L57",
+    "ProcessRenderUseTiming L2449–2477：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L2449",
+    "ProcessHdiRendererPrimary / ThreadFuncWriteHDI L3821–3887：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L3821",
+    "SinkOutput::DoProcess / RenderFrame L121–165：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L121",
+    "WriteData L1122–1161：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L1122"
   ],
-  "connect": [
-    "3a2688e805df970739e3b0cebf9cc05d8cb24e9b",
-    "services/audio_engine/node/src/hpae_process_cluster.cpp",
-    206,
-    232,
-    "ProcessCluster::Connect"
+  "P15": [
+    "ProcessRenderUseTiming L2449–2477：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L2449",
+    "ProcessHdiRendererPrimary / ThreadFuncWriteHDI L3821–3887：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L3821",
+    "Start / pa_stream_cork L154–182：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/src/pa_renderer_stream_impl.cpp#L154",
+    "PaLockGuard L25–63：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/include/pa_adapter_tools.h#L25",
+    "PushRequestNode 原子发布 L172–191：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L172",
+    "ProcessCluster::Connect L206–232：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_process_cluster.cpp#L206",
+    "CreateSessionEffectNode L547–582：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_process_cluster.cpp#L547",
+    "RendererManager::Start L919–945：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L919"
   ],
-  "nodes": [
-    "3a2688e805df970739e3b0cebf9cc05d8cb24e9b",
-    "services/audio_engine/node/src/hpae_output_cluster.cpp",
-    110,
-    135,
-    "OutputCluster::Connect"
+  "P16": [
+    "ConnectRendererStreamToPA L673–702：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/src/pa_adapter_manager.cpp#L673",
+    "ReadDataAndConvertFormat L680–707：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L680",
+    "AddSingleNodeToSink L106–179：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L106",
+    "UPDATE_SPANSIZE 状态处理 L1157–1183：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/hpae_renderer_stream_impl.cpp#L1157"
   ],
-  "share": [
-    "3a2688e805df970739e3b0cebf9cc05d8cb24e9b",
-    "services/audio_engine/manager/src/hpae_renderer_manager.cpp",
-    179,
-    240,
-    "CreateProcessClusterInner"
+  "P17": [
+    "PushRequest / HandleRequests / TryExpandQueue L57–145：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L57",
+    "队列容量与扩容阈值 L28–38：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.h#L28",
+    "PushRequestNode 原子发布 L172–191：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L172"
   ],
-  "pull": [
-    "3a2688e805df970739e3b0cebf9cc05d8cb24e9b",
-    "services/audio_engine/node/include/hpae_node.h",
-    315,
-    325,
-    "InputPort::ReadPreOutputData"
+  "P18": [
+    "InputPort::ReadPreOutputData L315–325：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/include/hpae_node.h#L315",
+    "OutputPort::PullOutputData L389–404：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/include/hpae_node.h#L389",
+    "ExtractOutputFromProcessedBuffer L815–840：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_audio_format_converter_node.cpp#L815",
+    "ReadDataAndConvertFormat L680–707：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L680"
   ],
-  "move": [
-    "3a2688e805df970739e3b0cebf9cc05d8cb24e9b",
-    "services/audio_engine/manager/src/hpae_manager.cpp",
-    1065,
-    1095,
-    "MoveSinkInputByIndexOrName"
+  "P19": [
+    "Drain迟到回调的状态保护 L450–477：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L450",
+    "StopAudioStream L1554–1603：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/client/src/renderer_in_client_public.cpp#L1554",
+    "Stop设置STOPPING L1889–1916、OPERATION_STOPPED处理 L437–443：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L437"
   ],
-  "detach": [
-    "3a2688e805df970739e3b0cebf9cc05d8cb24e9b",
-    "services/audio_engine/manager/src/hpae_renderer_manager.cpp",
-    872,
-    916,
-    "MoveStreamSync"
+  "P20": [
+    "MoveSinkInputByIndexOrName L447–473：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/audioadapter/src/pulse_audio_service_adapter_impl.cpp#L447",
+    "MoveSinkInputByIndexOrName L1065–1095：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_manager.cpp#L1065",
+    "MoveStreamSync L872–916：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L872",
+    "目标Manager接入与映射更新 L1181–1227：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_manager.cpp#L1181",
+    "AddSingleNodeToSink L106–179：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L106",
+    "UPDATE_SPANSIZE 状态处理 L1157–1183：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/hpae_renderer_stream_impl.cpp#L1157",
+    "PA move协议：https://gitcode.com/openharmony/third_party_pulseaudio/blob/bc6e4fe58232dbad60ae6ee5d83cf46d0fe9b3ca/src/pulsecore/protocol-native.c#L4483",
+    "PA start_move / finish_move / move_to：https://gitcode.com/openharmony/third_party_pulseaudio/blob/bc6e4fe58232dbad60ae6ee5d83cf46d0fe9b3ca/src/pulsecore/sink-input.c#L1867",
+    "PA finish_move：https://gitcode.com/openharmony/third_party_pulseaudio/blob/bc6e4fe58232dbad60ae6ee5d83cf46d0fe9b3ca/src/pulsecore/sink-input.c#L2159",
+    "PA sink I/O START_MOVE / FINISH_MOVE：https://gitcode.com/openharmony/third_party_pulseaudio/blob/bc6e4fe58232dbad60ae6ee5d83cf46d0fe9b3ca/src/pulsecore/sink.c#L2748"
   ],
-  "attach": [
-    "3a2688e805df970739e3b0cebf9cc05d8cb24e9b",
-    "services/audio_engine/manager/src/hpae_renderer_manager.cpp",
-    106,
-    179,
-    "AddSingleNodeToSink"
-  ],
-  "oldentry": [
-    "c42a228d60b64a90d6b05cf26278a89253e5310b",
-    "services/audio_service/server/src/i_stream_manager.cpp",
-    22,
-    39,
-    "GetPlaybackManager"
-  ],
-  "daemon": [
-    "c42a228d60b64a90d6b05cf26278a89253e5310b",
-    "services/audio_service/server/src/audio_server.cpp",
-    261,
-    273,
-    "paDaemonThread / ohos_pa_main"
-  ],
-  "pa": [
-    "c42a228d60b64a90d6b05cf26278a89253e5310b",
-    "services/audio_service/server/src/pa_renderer_stream_impl.cpp",
-    699,
-    755,
-    "pa_stream_write / PAStreamWriteCb"
-  ],
-  "palock": [
-    "c42a228d60b64a90d6b05cf26278a89253e5310b",
-    "services/audio_service/server/include/pa_adapter_tools.h",
-    25,
-    63,
-    "PaLockGuard"
-  ],
-  "pastart": [
-    "c42a228d60b64a90d6b05cf26278a89253e5310b",
-    "services/audio_service/server/src/pa_renderer_stream_impl.cpp",
-    154,
-    182,
-    "Start / pa_stream_cork"
-  ],
-  "post": [
-    "c42a228d60b64a90d6b05cf26278a89253e5310b",
-    "frameworks/native/pulseaudio/modules/hdi/hdi_sink.c",
-    2449,
-    2477,
-    "ProcessRenderUseTiming"
-  ],
-  "writer": [
-    "c42a228d60b64a90d6b05cf26278a89253e5310b",
-    "frameworks/native/pulseaudio/modules/hdi/hdi_sink.c",
-    3821,
-    3887,
-    "ProcessHdiRendererPrimary / ThreadFuncWriteHDI"
-  ],
-  "effectold": [
-    "c42a228d60b64a90d6b05cf26278a89253e5310b",
-    "frameworks/native/pulseaudio/modules/hdi/hdi_sink.c",
-    2315,
-    2354,
-    "SinkRenderPrimaryProcess"
-  ],
-  "pathsold": [
-    "c42a228d60b64a90d6b05cf26278a89253e5310b",
-    "frameworks/native/pulseaudio/modules/hdi/hdi_sink.c",
-    3409,
-    3491,
-    "MultiChannel processing"
-  ],
-  "attr": [
-    "c42a228d60b64a90d6b05cf26278a89253e5310b",
-    "services/audio_service/server/src/pa_adapter_manager.cpp",
-    673,
-    702,
-    "ConnectRendererStreamToPA"
-  ],
-  "oldpolicy": [
-    "c42a228d60b64a90d6b05cf26278a89253e5310b",
-    "frameworks/native/audioadapter/src/pulse_audio_service_adapter_impl.cpp",
-    447,
-    473,
-    "MoveSinkInputByIndexOrName"
-  ],
-  "converterbuf": [
-    "3a2688e805df970739e3b0cebf9cc05d8cb24e9b",
-    "services/audio_engine/node/src/hpae_audio_format_converter_node.cpp",
-    815,
-    840,
-    "ExtractOutputFromProcessedBuffer"
-  ],
-  "queuecas": [
-    "3a2688e805df970739e3b0cebf9cc05d8cb24e9b",
-    "services/audio_engine/utils/hpae_no_lock_queue.cpp",
-    172,
-    191,
-    "PushRequestNode 原子发布"
-  ],
-  "queuerun": [
-    "3a2688e805df970739e3b0cebf9cc05d8cb24e9b",
-    "services/audio_engine/utils/hpae_no_lock_queue.cpp",
-    227,
-    262,
-    "ProcessRequests 批量执行"
-  ],
-  "renderstart": [
-    "3a2688e805df970739e3b0cebf9cc05d8cb24e9b",
-    "services/audio_engine/manager/src/hpae_renderer_manager.cpp",
-    919,
-    945,
-    "RendererManager::Start"
-  ],
-  "sessionfx": [
-    "3a2688e805df970739e3b0cebf9cc05d8cb24e9b",
-    "services/audio_engine/node/src/hpae_process_cluster.cpp",
-    547,
-    582,
-    "CreateSessionEffectNode"
-  ],
-  "fxformat": [
-    "3a2688e805df970739e3b0cebf9cc05d8cb24e9b",
-    "services/audio_engine/node/src/hpae_process_cluster.cpp",
-    351,
-    365,
-    "SessionEffect 输入格式约束"
-  ],
-  "queueconst": [
-    "3a2688e805df970739e3b0cebf9cc05d8cb24e9b",
-    "services/audio_engine/utils/hpae_no_lock_queue.h",
-    28,
-    38,
-    "队列容量与扩容阈值"
-  ],
-  "pullout": [
-    "3a2688e805df970739e3b0cebf9cc05d8cb24e9b",
-    "services/audio_engine/node/include/hpae_node.h",
-    389,
-    404,
-    "OutputPort::PullOutputData"
-  ],
-  "outcreate": [
-    "3a2688e805df970739e3b0cebf9cc05d8cb24e9b",
-    "services/audio_engine/node/src/hpae_output_cluster.cpp",
-    32,
-    47,
-    "OutputCluster 构造与limiter条件"
-  ],
-  "clientstart": [
-    "3a2688e805df970739e3b0cebf9cc05d8cb24e9b",
-    "services/audio_service/client/src/renderer_in_client_public.cpp",
-    1398,
-    1454,
-    "StartAudioStream / 等待RUNNING"
-  ],
-  "managerstart": [
-    "3a2688e805df970739e3b0cebf9cc05d8cb24e9b",
-    "services/audio_engine/manager/src/hpae_manager.cpp",
-    1830,
-    1875,
-    "HpaeManager::Start"
-  ],
-  "status": [
-    "3a2688e805df970739e3b0cebf9cc05d8cb24e9b",
-    "services/audio_service/server/src/renderer_in_server.cpp",
-    411,
-    428,
-    "STARTED 状态回程"
-  ],
-  "movein": [
-    "3a2688e805df970739e3b0cebf9cc05d8cb24e9b",
-    "services/audio_engine/manager/src/hpae_manager.cpp",
-    1181,
-    1227,
-    "目标Manager接入与映射更新"
-  ],
-  "span": [
-    "3a2688e805df970739e3b0cebf9cc05d8cb24e9b",
-    "services/audio_service/server/src/hpae_renderer_stream_impl.cpp",
-    1157,
-    1183,
-    "UPDATE_SPANSIZE 状态处理"
+  "P21": [
+    "GetPlaybackManager L29–64：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/i_stream_manager.cpp#L29",
+    "GetPlaybackManager L22–39：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/src/i_stream_manager.cpp#L22",
+    "paDaemonThread / ohos_pa_main L261–273：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/src/audio_server.cpp#L261",
+    "PushRequestNode 原子发布 L172–191：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L172",
+    "ProcessCluster::Connect L206–232：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_process_cluster.cpp#L206"
   ]
 }

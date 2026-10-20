@@ -187,11 +187,11 @@
   ],
   "minutes": 0,
   "section": "源码设计 · 条件与边界",
-  "next": "继续沿实际调用展开。",
+  "next": "版本与路径适用范围见A6。",
   "footer": "PA同步send等待I/O处理；HPAE请求入队不等于目标执行完毕",
   "boundary": "旧PA固定bc6e4fe5；不把对象复用作为自研独有创新。",
   "cue": "",
-  "pacing": "先按图走一次调用，再解释条件与设计理由。",
+  "pacing": "按答疑问题选讲，不计入55分钟主讲。先走正常路径，再解释条件与边界。",
   "sources": [
     "MoveSinkInputByIndexOrName L447–473：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/audioadapter/src/pulse_audio_service_adapter_impl.cpp#L447",
     "MoveSinkInputByIndexOrName L1065–1095：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_manager.cpp#L1065",
@@ -205,7 +205,7 @@
     "PA sink I/O START_MOVE / FINISH_MOVE：https://gitcode.com/openharmony/third_party_pulseaudio/blob/bc6e4fe58232dbad60ae6ee5d83cf46d0fe9b3ca/src/pulsecore/sink.c#L2748"
   ],
   "dark": false,
-  "from": "按设备切换与节点迁移问题进入。",
+  "from": "按迁移机制和旧PA能力对照问题进入。",
   "label": "A5",
   "titleSize": 40,
   "revision": "technical-design-v2"

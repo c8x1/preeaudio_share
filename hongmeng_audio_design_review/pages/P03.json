@@ -263,11 +263,11 @@
   ],
   "minutes": 3,
   "section": "源码设计 · 主讲",
-  "next": "继续沿实际调用展开。",
+  "next": "旧5.1方案的Start怎样经PA主循环和回调？",
   "footer": "控制泳道；设备执行发生于另一次排队，未绘出精细回调条件",
   "boundary": "普通 HPAE 路径；非 FAST 的连接等待有条件；无跨线程全局总序。",
   "cue": "",
-  "pacing": "先按图走一次调用，再解释条件与设计理由。",
+  "pacing": "建议3分钟，包含逐步读图、停顿与互动。请听众指出第二次入队的位置，以及STARTED回程为什么不等待首帧。",
   "sources": [
     "StartAudioStream / 等待RUNNING L1398–1454：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/client/src/renderer_in_client_public.cpp#L1398",
     "StartInner L1576–1606：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L1576",
@@ -276,7 +276,7 @@
     "STARTED 状态回程 L411–428：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L411"
   ],
   "dark": false,
-  "from": "已经明确全局职责图。",
+  "from": "按对象地图展开当前Start，区分请求受理与执行。",
   "titleSize": 40,
   "revision": "technical-design-v2"
 }

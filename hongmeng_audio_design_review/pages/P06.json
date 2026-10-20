@@ -187,11 +187,11 @@
   ],
   "minutes": 3,
   "section": "源码设计 · 主讲",
-  "next": "继续沿实际调用展开。",
+  "next": "新线程如何同时承接消息和音频处理？",
   "footer": "比较范围：5.1普通主输出与当前HPAE普通输出；驱动下游另行测量",
   "boundary": "两个版本的实现对照，不是相同设备上的实测数值。",
   "cue": "",
-  "pacing": "先按图走一次调用，再解释条件与设计理由。",
+  "pacing": "建议3分钟，包含逐步读图、停顿与互动。分别沿左右链路走一遍，在旧dq位置停顿，解释删除的是哪一段交接。",
   "sources": [
     "ProcessRenderUseTiming L2449–2477：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L2449",
     "ProcessHdiRendererPrimary / ThreadFuncWriteHDI L3821–3887：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L3821",
@@ -201,7 +201,7 @@
     "SinkOutput::DoProcess / RenderFrame L121–165：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L121"
   ],
   "dark": false,
-  "from": "刚才定位了三种结构成本。",
+  "from": "在同一普通主输出范围比较新旧执行组织。",
   "titleSize": 40,
   "revision": "technical-design-v2"
 }

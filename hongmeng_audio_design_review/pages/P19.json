@@ -189,18 +189,18 @@
   ],
   "minutes": 0,
   "section": "源码设计 · 条件与边界",
-  "next": "继续沿实际调用展开。",
+  "next": "新旧设备迁移组织对照见A5。",
   "footer": "示例为可能的并发交错；I_STATUS_属于服务端，非客户端RUNNING",
   "boundary": "公共服务层状态保护；不宣称自研新增或所有Stop都会Drain成功。",
   "cue": "",
-  "pacing": "先按图走一次调用，再解释条件与设计理由。",
+  "pacing": "按答疑问题选讲，不计入55分钟主讲。先走正常路径，再解释条件与边界。",
   "sources": [
     "Drain迟到回调的状态保护 L450–477：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L450",
     "StopAudioStream L1554–1603：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/client/src/renderer_in_client_public.cpp#L1554",
     "Stop设置STOPPING L1889–1916、OPERATION_STOPPED处理 L437–443：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L437"
   ],
   "dark": false,
-  "from": "按跨层控制与成功语义问题进入。",
+  "from": "按异步完成事件与服务状态一致性问题进入。",
   "label": "A4",
   "titleSize": 40,
   "revision": "technical-design-v2"
