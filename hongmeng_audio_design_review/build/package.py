@@ -5,6 +5,8 @@ from PIL import Image,ImageDraw,ImageFont
 import numpy as np
 R=Path(__file__).resolve().parents[1]
 pages=[json.loads(p.read_text(encoding='utf-8')) for p in sorted((R/'pages').glob('P??.json'))]
+if not all(p.get('teaching_status','').startswith('PASS') for p in pages):
+ raise RuntimeError('教学深度修订进行中：不得沿用旧55分钟标签打包为新成品。请先逐页完成教学内容复审。')
 assert len(pages)==21 and sum(p['minutes'] for p in pages)==55
 assert all(p.get('revision')=='technical-design-v2' for p in pages)
 for p in pages:

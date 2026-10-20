@@ -1,0 +1,13 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {fileURLToPath,pathToFileURL} from 'node:url';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+const skill='C:/Users/47156/.codex/plugins/cache/openai-primary-runtime/presentations/26.1015.12040/skills/presentations';
+const py='C:/Users/47156/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe';
+process.env.RUNTIME_NODE_MODULES='C:/Users/47156/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules';
+const n=Number(process.argv[2]||1),id=`P${String(n).padStart(2,'0')}`;
+const out=path.join(root,'逐页修订');await fs.mkdir(out,{recursive:true});
+const file=path.join(out,`${id}_30秒开场.pptx`);
+const {finalizePresentation}=await import(pathToFileURL(path.join(skill,'container_tools/artifact_tool_utils.mjs')).href);
+await finalizePresentation({workspaceDir:path.dirname(root),candidatePath:path.join(root,'build/.private',`${id}.pptx`),finalPath:file,pythonExecutable:py,integrityValidatorPath:path.join(skill,'container_tools/inspect_presentation_package_integrity.py'),layoutValidatorPath:path.join(skill,'container_tools/inspect_presentation_layout_geometry.py'),layoutArgs:['--expected-slide-size-emu','12192000,6858000','--validate-heading-fit'],explicitTotalSlideCount:1,requiredNativeTableOwnerSlides:[],requiredNativeChartOwnerSlides:[],fontPolicy:{basis:'design',families:['Microsoft YaHei']},verifyArtifactToolImport:true,receiptPath:path.join(root,'..','.codex-finalizer',`teaching-${id}-${Date.now()}.json`)});
+console.log(file);
