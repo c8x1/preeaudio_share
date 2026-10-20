@@ -1,0 +1,212 @@
+{
+  "n": 20,
+  "title": "A5  设备迁移：PA 与 HPAE 的真实设计对照",
+  "takeaway": "旧方案已有输入对象复用，自研用 Manager 与节点图组织迁移",
+  "objective": "旧方案已有输入对象复用，自研用 Manager 与节点图组织迁移",
+  "script": "PA的libpulse发送MOVE_SINK_INPUT，控制上下文通过pa_sink_input_move_to迁移同一个sink_input。start_move同步向旧sink I/O发START_MOVE，让其detach并处理rewind。finish_move更新sink、resampler和音量，然后同步向目标I/O发FINISH_MOVE，目标attach并按latency条件处理drop/rewind。控制侧完成hook与订阅通知，协议ACK返回。两次send是等待I/O处理的握手；ACK也不等于声学切换无间隙。\n新HPAE同样保留输入对象，旧Renderer在设备队列中断旧图并回调，HpaeManager交目标Renderer再次入队，更新设备信息与span，根据RUNNING状态连接目标过程簇。这里的设计对照是执行上下文、同步边界和节点状态组织，不是“旧方案重建流、新方案才复用对象”。两边都有可移动性或格式条件，不能推广任意流无损迁移。",
+  "elements": [
+    [
+      "text",
+      64,
+      251,
+      540,
+      38,
+      "5.1 PA：控制与 sink I/O 握手",
+      26,
+      "gray",
+      true,
+      "left"
+    ],
+    [
+      "text",
+      680,
+      251,
+      535,
+      38,
+      "当前 HPAE：跨 Manager 接图",
+      26,
+      "blue",
+      true,
+      "left"
+    ],
+    [
+      "line",
+      635,
+      250,
+      635,
+      601,
+      "light",
+      2
+    ],
+    [
+      "node",
+      64,
+      328,
+      535,
+      48,
+      "MOVE 命令 → pa_sink_input_move_to",
+      "navy",
+      18
+    ],
+    [
+      "arrow",
+      331,
+      376,
+      331,
+      392,
+      "navy",
+      false
+    ],
+    [
+      "node",
+      64,
+      392,
+      535,
+      48,
+      "START_MOVE 同步到旧 I/O：detach",
+      "navy",
+      18
+    ],
+    [
+      "arrow",
+      331,
+      440,
+      331,
+      456,
+      "navy",
+      false
+    ],
+    [
+      "node",
+      64,
+      456,
+      535,
+      48,
+      "更新 sink / resampler / volume",
+      "navy",
+      18
+    ],
+    [
+      "arrow",
+      331,
+      504,
+      331,
+      520,
+      "navy",
+      false
+    ],
+    [
+      "node",
+      64,
+      520,
+      535,
+      48,
+      "FINISH_MOVE 同步到目标 I/O：attach",
+      "navy",
+      18
+    ],
+    [
+      "node",
+      680,
+      328,
+      535,
+      48,
+      "MoveStream 请求进入旧 Renderer",
+      "blue",
+      18
+    ],
+    [
+      "arrow",
+      947,
+      376,
+      947,
+      392,
+      "blue",
+      false
+    ],
+    [
+      "node",
+      680,
+      392,
+      535,
+      48,
+      "保留 SinkInput，断旧连接后回调",
+      "blue",
+      18
+    ],
+    [
+      "arrow",
+      947,
+      440,
+      947,
+      456,
+      "blue",
+      false
+    ],
+    [
+      "node",
+      680,
+      456,
+      535,
+      48,
+      "目标 AddNodeToSink 再次入队",
+      "blue",
+      18
+    ],
+    [
+      "arrow",
+      947,
+      504,
+      947,
+      520,
+      "blue",
+      false
+    ],
+    [
+      "node",
+      680,
+      520,
+      535,
+      48,
+      "更新设备 / span，RUNNING 才连接",
+      "blue",
+      18
+    ],
+    [
+      "text",
+      64,
+      615,
+      1150,
+      38,
+      "两种方案都复用输入对象；差异在跨线程同步、状态衔接和处理连接的组织方式",
+      22,
+      "navy",
+      true,
+      "left"
+    ]
+  ],
+  "minutes": 0,
+  "section": "源码设计 · 条件与边界",
+  "next": "继续沿实际调用展开。",
+  "footer": "PA同步send等待I/O处理；HPAE请求入队不等于目标执行完毕",
+  "boundary": "旧PA固定bc6e4fe5；不把对象复用作为自研独有创新。",
+  "cue": "",
+  "pacing": "先按图走一次调用，再解释条件与设计理由。",
+  "sources": [
+    "MoveSinkInputByIndexOrName L447–473：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/audioadapter/src/pulse_audio_service_adapter_impl.cpp#L447",
+    "MoveSinkInputByIndexOrName L1065–1095：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_manager.cpp#L1065",
+    "MoveStreamSync L872–916：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L872",
+    "目标Manager接入与映射更新 L1181–1227：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_manager.cpp#L1181",
+    "AddSingleNodeToSink L106–179：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L106",
+    "UPDATE_SPANSIZE 状态处理 L1157–1183：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/hpae_renderer_stream_impl.cpp#L1157",
+    "PA move协议：https://gitcode.com/openharmony/third_party_pulseaudio/blob/bc6e4fe58232dbad60ae6ee5d83cf46d0fe9b3ca/src/pulsecore/protocol-native.c#L4483",
+    "PA start_move / finish_move / move_to：https://gitcode.com/openharmony/third_party_pulseaudio/blob/bc6e4fe58232dbad60ae6ee5d83cf46d0fe9b3ca/src/pulsecore/sink-input.c#L1867",
+    "PA finish_move：https://gitcode.com/openharmony/third_party_pulseaudio/blob/bc6e4fe58232dbad60ae6ee5d83cf46d0fe9b3ca/src/pulsecore/sink-input.c#L2159",
+    "PA sink I/O START_MOVE / FINISH_MOVE：https://gitcode.com/openharmony/third_party_pulseaudio/blob/bc6e4fe58232dbad60ae6ee5d83cf46d0fe9b3ca/src/pulsecore/sink.c#L2748"
+  ],
+  "dark": false,
+  "from": "按设备切换与节点迁移问题进入。",
+  "label": "A5",
+  "titleSize": 40,
+  "revision": "technical-design-v2"
+}
