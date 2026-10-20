@@ -1,0 +1,198 @@
+{
+  "n": 18,
+  "title": "A3  一次 Pull：有结果就取，空队列才计算",
+  "takeaway": "OutputPort 的队列条件决定是否触发前驱节点处理",
+  "objective": "OutputPort 的队列条件决定是否触发前驱节点处理",
+  "script": "InputPort::ReadPreOutputData遍历连接的前驱并调用其OutputPort::PullOutputData。OutputPort先检查outputData_队列，只有空队列才调用所属Node的DoProcess。随后若队列已有结果，移动back并pop_back返回；计算后仍为空就返回nullptr；InputPort只收集非空结果。图中橙色DoProcess是条件分支，不是每次Pull的必经步骤。\n这解释为什么不能说一轮Process中所有节点必然各运行一次。下游按需要反向索取，上游已有结果可被消费；有些节点如Converter还维护自己独立的处理帧缓存，与端口结果队列不同。SinkOutput可能重复拉取并拼成设备renderSize。所有条件都来自现有代码，图中没有设置虚构的默认帧数或时长。",
+  "elements": [
+    [
+      "text",
+      105,
+      245,
+      230,
+      48,
+      "下游 InputPort",
+      23,
+      "navy",
+      true,
+      "center"
+    ],
+    [
+      "line",
+      220,
+      300,
+      220,
+      600,
+      "light",
+      2
+    ],
+    [
+      "text",
+      525,
+      245,
+      230,
+      48,
+      "前驱 OutputPort",
+      23,
+      "navy",
+      true,
+      "center"
+    ],
+    [
+      "line",
+      640,
+      300,
+      640,
+      600,
+      "light",
+      2
+    ],
+    [
+      "text",
+      945,
+      245,
+      230,
+      48,
+      "前驱 Node",
+      23,
+      "navy",
+      true,
+      "center"
+    ],
+    [
+      "line",
+      1060,
+      300,
+      1060,
+      600,
+      "light",
+      2
+    ],
+    [
+      "arrow",
+      220,
+      329,
+      640,
+      329,
+      "blue",
+      false
+    ],
+    [
+      "text",
+      230,
+      296,
+      405,
+      30,
+      "ReadPreOutputData → PullOutputData",
+      20,
+      "blue",
+      false,
+      "left"
+    ],
+    [
+      "text",
+      662,
+      369,
+      535,
+      35,
+      "if outputData_.empty()",
+      22,
+      "amber",
+      false,
+      "left"
+    ],
+    [
+      "arrow",
+      640,
+      429,
+      1060,
+      429,
+      "amber",
+      false
+    ],
+    [
+      "text",
+      650,
+      396,
+      405,
+      30,
+      "为空才调用 DoProcess()",
+      21,
+      "amber",
+      false,
+      "left"
+    ],
+    [
+      "arrow",
+      1060,
+      493,
+      640,
+      493,
+      "teal",
+      false
+    ],
+    [
+      "text",
+      650,
+      460,
+      405,
+      30,
+      "结果写入输出队列",
+      21,
+      "teal",
+      false,
+      "left"
+    ],
+    [
+      "arrow",
+      640,
+      553,
+      220,
+      553,
+      "teal",
+      false
+    ],
+    [
+      "text",
+      230,
+      520,
+      405,
+      30,
+      "取 back() 并 pop_back()",
+      21,
+      "teal",
+      false,
+      "left"
+    ],
+    [
+      "text",
+      64,
+      615,
+      1150,
+      39,
+      "队列已有结果时跳过 DoProcess；仍为空返回 nullptr，InputPort 只收集非空结果",
+      21,
+      "navy",
+      true,
+      "left"
+    ]
+  ],
+  "minutes": 0,
+  "section": "源码设计 · 条件与边界",
+  "next": "继续沿实际调用展开。",
+  "footer": "橙色调用仅在空队列时发生；实际InputPort可有多个前驱",
+  "boundary": "端口结果队列与Converter内部缓存是不同对象。",
+  "cue": "",
+  "pacing": "先按图走一次调用，再解释条件与设计理由。",
+  "sources": [
+    "InputPort::ReadPreOutputData L315–325：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/include/hpae_node.h#L315",
+    "OutputPort::PullOutputData L389–404：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/include/hpae_node.h#L389",
+    "ExtractOutputFromProcessedBuffer L815–840：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_audio_format_converter_node.cpp#L815",
+    "ReadDataAndConvertFormat L680–707：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L680"
+  ],
+  "dark": false,
+  "from": "按节点次序与执行方向问题进入。",
+  "label": "A3",
+  "titleSize": 40,
+  "revision": "technical-design-v2"
+}
