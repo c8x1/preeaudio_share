@@ -1,0 +1,17 @@
+OutputPort空队列触发计算 L389–404：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/include/hpae_node.h#L389
+389: T OutputPort<T>::PullOutputData()
+390: {
+391:     if (outputData_.empty()) {
+392:         hpaeNode_->DoProcess();
+393:     }
+394:     if (!outputData_.empty()) {
+395:         T retValue = std::move(outputData_.back());
+396:         outputData_.pop_back();
+397:         return retValue;
+398:     } else {
+399:         return nullptr;
+400:     }
+401: }
+402: 
+403: template <class T>
+404: void OutputPort<T>::WriteDataToOutput(T data, HpaeBufferType bufferType)

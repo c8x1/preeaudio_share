@@ -1,0 +1,9 @@
+设备提交块初始化 L62–69：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L62
+62: HpaeSinkOutputNode::HpaeSinkOutputNode(HpaeNodeInfo &nodeInfo)
+63:     : HpaeNode(nodeInfo),
+64:       renderFrameData_(nodeInfo.frameLen * nodeInfo.channels * GetSizeFromFormat(nodeInfo.format)),
+65:       interleveData_(nodeInfo.frameLen * nodeInfo.channels)
+66: {
+67:     renderSize_ = renderFrameData_.size();
+68:     outputSize_ = renderSize_;
+69:     AUDIO_INFO_LOG("name is %{public}s renderSize = %{public}zu", sinkOutAttr_.adapterName.c_str(),

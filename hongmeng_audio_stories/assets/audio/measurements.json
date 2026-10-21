@@ -1,0 +1,32 @@
+[
+  {
+    "file": "01_scene_mix.wav",
+    "seconds": 10,
+    "sample_rate": 48000,
+    "channels": 2,
+    "bits": 16,
+    "peak_dBFS": -9.681637441478898,
+    "rms_dBFS": -24.000265078305695,
+    "sha256": "fc217737f30d8a66cd43827dc5a6e7afe8e684ecfd6c644e238a01ddfd2601e7"
+  },
+  {
+    "file": "02_continuous.wav",
+    "seconds": 10,
+    "sample_rate": 48000,
+    "channels": 2,
+    "bits": 16,
+    "peak_dBFS": -9.681637441478898,
+    "rms_dBFS": -24.000265078305695,
+    "sha256": "fc217737f30d8a66cd43827dc5a6e7afe8e684ecfd6c644e238a01ddfd2601e7"
+  },
+  {
+    "file": "03_simulated_dropout.wav",
+    "seconds": 10,
+    "sample_rate": 48000,
+    "channels": 2,
+    "bits": 16,
+    "peak_dBFS": -9.632484820128152,
+    "rms_dBFS": -24.000263352955248,
+    "sha256": "ec971f36b07d71019ca2bb79f1c2d94e79aa4a22dae48385a3439ceeaab062da"
+  }
+]

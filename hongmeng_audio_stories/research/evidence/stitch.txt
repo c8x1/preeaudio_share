@@ -1,0 +1,29 @@
+字节拼帧循环 L680–707：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L680
+680: bool HpaeSinkOutputNode::ReadDataAndConvertFormat()
+681: {
+682:     while (currentSize_ < renderSize_) {
+683:         std::vector<HpaePcmBuffer *> &outputVec = inputStream_.ReadPreOutputData();
+684:         CHECK_AND_RETURN_RET(!outputVec.empty(), false);
+685:         HpaePcmBuffer *outputData = outputVec.front();
+686:         if (outputData == nullptr) {
+687:             StreamDfxManager::GetInstance().SendAudioErrorEvent(static_cast<int32_t>(getuid()),
+688:                 BuildErrorCode(ProblemCategory::FAULT_NO_SOUND, OperationType::PLAY,
+689:                     BusinessScenario::SEND_DATA, ERR_NULL_POINTER),
+690:                 "outputData is nullptr", false);
+691:             return false;
+692:         }
+693:         HandlePaPower(outputData);
+694:         uint32_t frameLen = outputData->GetFrameLen();
+695:         uint32_t channels = outputData->GetChannelCount();
+696:         uint32_t inDurationMs = frameLen * AUDIO_MS_PER_S / outputData->GetSampleRate();
+697:         uint32_t outDurationMs = GetFrameLen() * AUDIO_MS_PER_S / GetSampleRate();
+698:         if (renderFrameData_.size() == renderSize_ && inDurationMs != outDurationMs) {
+699:             outputSize_ = frameLen * channels * static_cast<size_t>(GetSizeFromFormat(GetBitWidth()));
+700:             AUDIO_INFO_LOG("Update outputSize to %{public}zu", outputSize_);
+701:             renderFrameData_.resize(outputSize_ + renderSize_);
+702:         }
+703:         ConvertFromFloat(
+704:             GetBitWidth(), channels * frameLen, outputData->GetPcmDataBuffer(), renderFrameData_.data() + currentSize_);
+705:         currentSize_ += outputSize_;
+706:     }
+707:     return true;
