@@ -1,0 +1,62 @@
+节点取出、回收、闭包执行与头空检查 L206–267：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L206
+206: uint64_t HpaeNoLockQueue::GetRequestNode(std::atomic<uint64_t> *pRequestHeadIndex)
+207: {
+208:     if (pRequestHeadIndex == nullptr) {
+209:         return std::numeric_limits<uint64_t>::max();
+210:     }
+211:     uint64_t requestHeadIndex;
+212:     uint64_t nextRequestIndex;
+213:     do {
+214:         requestHeadIndex = pRequestHeadIndex->load();
+215:         if (GetRequestIndex(requestHeadIndex) == INVALID_REQUEST_ID) {
+216:             return INVALID_REQUEST_ID;
+217:         }
+218:         RequestNode *requestNode = GetRequestNodePtr(requestHeadIndex);
+219:         if (requestNode == nullptr) {
+220:             return INVALID_REQUEST_ID;
+221:         }
+222:         nextRequestIndex = requestNode->nextRequestIndex;
+223:     } while (!std::atomic_compare_exchange_strong(pRequestHeadIndex, &requestHeadIndex, nextRequestIndex));
+224:     return IncRequestIndex(requestHeadIndex);
+225: }
+226: 
+227: void HpaeNoLockQueue::ProcessRequests(uint64_t requestHeadIndex, bool isProcess)
+228: {
+229:     if (tempRequestQueue_.capacity() < requestCount_.load()) {
+230:         tempRequestQueue_.reserve(requestCount_.load());
+231:     }
+232:     uint64_t tempIndex = requestHeadIndex;
+233:     size_t requestCount = 0;
+234:     while (GetRequestIndex(tempIndex) != INVALID_REQUEST_ID) {
+235:         RequestNode *tempRequest = GetRequestNodePtr(tempIndex);
+236:         CHECK_AND_BREAK_LOG(tempRequest != nullptr, "tempRequest is nullptr");
+237:         uint64_t nextRequest = tempRequest->nextRequestIndex;
+238:         tempRequestQueue_.emplace_back(std::move(tempRequest->request));
+239:         tempRequest->request = nullptr;
+240:         PushRequestNode(&freeRequestHeadIndex_, tempIndex);
+241:         tempIndex = nextRequest;
+242:         requestCount++;
+243:     }
+244:     if (requestCount > 0) {
+245:         usedRequestCount_.fetch_sub(requestCount);
+246:     }
+247: 
+248:     if (isProcess) {
+249:         for (std::vector<Request>::reverse_iterator requestIter = tempRequestQueue_.rbegin();
+250:              requestIter != tempRequestQueue_.rend();
+251:              ++requestIter) {
+252:             if (*requestIter != nullptr) {
+253:                 (*requestIter)();
+254:             }
+255:         }
+256:     }
+257:     tempRequestQueue_.clear();
+258: }
+259: 
+260: bool HpaeNoLockQueue::IsFinishProcess()
+261: {
+262:     return GetRequestIndex(requestHeadIndex_) == INVALID_REQUEST_ID;
+263: }
+264: }  // namespace HPAE
+265: }  // namespace AudioStandard
+266: }  // namespace OHOS

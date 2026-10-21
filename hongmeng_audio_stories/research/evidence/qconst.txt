@@ -1,0 +1,16 @@
+节点结构及1000/90%/5000 L28–42：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.h#L28
+28: const size_t CURRENT_REQUEST_COUNT = 1000;
+29: const size_t MAX_REQUEST_COUNT = 5000;
+30: const size_t EXPAND_REQUEST_COUNT = CURRENT_REQUEST_COUNT;
+31: const size_t REQUEST_BLOCK_COUNT = MAX_REQUEST_COUNT / EXPAND_REQUEST_COUNT;
+32: const size_t EXPAND_THRESHOLD_PERCENT = 90;
+33: const size_t PERCENTAGE_BASE = 100;
+34: using Request = std::function<void()>;
+35: struct RequestNode {
+36:     RequestNode() = default;
+37:     RequestNode(const RequestNode &requestNode) : request(requestNode.request), nextRequestIndex()
+38:     {}
+39:     RequestNode &operator=(const RequestNode &requestNode) = delete;
+40:     Request request;
+41:     std::atomic<uint64_t> nextRequestIndex;
+42: };

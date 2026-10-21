@@ -1,0 +1,114 @@
+{
+  "n": 6,
+  "title": "B 的 CAS 失败以后，只重试够不够？",
+  "takeaway": "每次重试都重读表头、重建next，才能保住先前已发布的链",
+  "outcome": "能手算A/B成功与失败后的表头和next，并解释漏改next为何截断请求。",
+  "elements": [
+    [
+      "table",
+      54,
+      213,
+      1170,
+      350,
+      [
+        [
+          "步",
+          "生产者甲：A",
+          "生产者乙：B",
+          "全局待处理链"
+        ],
+        [
+          "1",
+          "填闭包A",
+          "填闭包B",
+          "∅"
+        ],
+        [
+          "2",
+          "读头∅；A.next=∅",
+          "读头∅；B.next=∅",
+          "∅"
+        ],
+        [
+          "3",
+          "CAS(∅→A)成功",
+          "尚未CAS",
+          "A → ∅"
+        ],
+        [
+          "4",
+          "已发布",
+          "CAS(∅→B)失败",
+          "A → ∅"
+        ],
+        [
+          "5",
+          "—",
+          "重读A；改B.next=A",
+          "A → ∅"
+        ],
+        [
+          "6",
+          "—",
+          "CAS(A→B)成功",
+          "B → A → ∅"
+        ]
+      ],
+      [
+        75,
+        325,
+        440,
+        330
+      ],
+      21
+    ],
+    [
+      "text",
+      54,
+      581,
+      1170,
+      40,
+      "若只重试CAS而不改next：B → ∅，已经发布的 A 会从请求链上脱落",
+      25,
+      "amber",
+      true,
+      "left"
+    ],
+    [
+      "text",
+      54,
+      631,
+      1170,
+      30,
+      "头值还含32位flag与32位index；复用携带版本信息，详见A3",
+      22,
+      "navy",
+      false,
+      "left"
+    ]
+  ],
+  "script": "下面用 A、B 两个教学请求推演。它们只表示两个独立任务，不预设业务顺序。队列里有两条链：一条保存空闲节点，一条保存已发布请求。生产者先取得自己的空闲节点，把闭包写进去，然后尝试把节点挂到请求链表头。它没有普通环形队列的 head、tail 两端。\n\n初始表头为空。生产者甲准备 A，乙准备 B。两人都读到了空头，各自把节点的 next 写成空。甲先执行 CAS：只有当前头仍等于我读到的空，才把它换成 A。甲成功了；轮到乙时，当前头已经是 A，乙原先的假设失效，CAS 必须失败。这不是请求失败，而是在提醒乙：重新连接到最新的链表，再提交。\n\n停在这里想一想：乙能否只重试 CAS，继续保持 B.next 为空？不能。即使它下一次成功把头换成 B，也会形成 B 指向空，已经发布的 A 就从待处理链上消失了。实际代码把“重新读头、重写 next、再 CAS”放在同一个重试循环里。乙重新读到 A，写 B.next=A，然后成功发布，结果才是 B→A→空。原子比较替换保护的是这次表头更新；next 的重建负责保持已有链条不被截断。两者缺一不可。\n\n源码的头值还携带索引和 flag：低三十二位定位节点，高三十二位携带版本信息。节点从空闲链取出后，返回值的高位加一，后续发布、回收携带它。这里能确认设计考虑了节点复用时的版本变化；有限位宽和并发前提仍然存在，不能仅凭这个字段就宣布得到了无条件的 ABA 安全证明。",
+  "sources": [
+    "取节点、发布与原子摘批 L57–89：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L57",
+    "CAS失败重试与next重建 L173–187：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L173",
+    "index/flag与版本增加 L142–155：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L142",
+    "节点取出、回收、闭包执行与头空检查 L206–267：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L206",
+    "节点结构及1000/90%/5000 L28–42：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.h#L28"
+  ],
+  "question": "第4步失败后，乙只换CAS的期望值、不改B.next，会发生什么？",
+  "answer": "一旦把头改成B，B仍指空，A从链上脱落。实际每次循环重读头并重写next，再尝试CAS。",
+  "condition": "A/B为独立请求的教学竞争；先后指CAS成功发布次序，不是外部调用起始次序",
+  "minutes": 5,
+  "chapter": "故事二 · CAS竞争推演",
+  "prev": "常规发布使用CAS，下面验证它究竟保证了什么。",
+  "next": "消费者摘走一批以后，C和被回收的节点分别归谁？",
+  "cue": "",
+  "sourceKeys": [
+    "qpush",
+    "qcas",
+    "qget",
+    "qrun",
+    "qconst"
+  ],
+  "version": "three-stories"
+}

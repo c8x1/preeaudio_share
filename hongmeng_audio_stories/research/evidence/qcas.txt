@@ -1,0 +1,16 @@
+CAS失败重试与next重建 L173–187：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L173
+173: void HpaeNoLockQueue::PushRequestNode(std::atomic<uint64_t> *pRequestHeadIndex, uint64_t index)
+174: {
+175:     if (pRequestHeadIndex == nullptr) {
+176:         return;
+177:     }
+178:     RequestNode *requestNode = GetRequestNodePtr(index);
+179:     if (requestNode == nullptr) {
+180:         return;
+181:     }
+182:     uint64_t requestHeadIndex;
+183:     do {
+184:         requestHeadIndex = pRequestHeadIndex->load();
+185:         requestNode->nextRequestIndex = requestHeadIndex;
+186:     } while (!std::atomic_compare_exchange_strong(pRequestHeadIndex, &requestHeadIndex, index));
+187: }
