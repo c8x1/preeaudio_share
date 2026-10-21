@@ -1,0 +1,118 @@
+{
+  "n": 11,
+  "title": "看到 Move 日志，就发生了节点迁移吗？",
+  "takeaway": "分别追踪device、pipe和sink；方法入口不能代替最终分支",
+  "outcome": "能解释device变化但同pipe、同sink的完整反例，区分Move调用、HPAE早退与设备route。",
+  "elements": [
+    [
+      "node",
+      54,
+      214,
+      340,
+      64,
+      "device：物理输出目标",
+      "blue",
+      24
+    ],
+    [
+      "node",
+      469,
+      214,
+      340,
+      64,
+      "pipe：策略执行计划",
+      "purple",
+      24
+    ],
+    [
+      "node",
+      884,
+      214,
+      340,
+      64,
+      "sink：引擎归属名称",
+      "teal",
+      24
+    ],
+    [
+      "table",
+      54,
+      315,
+      1170,
+      300,
+      [
+        [
+          "沿一次合法分支",
+          "具体判断 / 动作",
+          "不能据此推出"
+        ],
+        [
+          "① 目标device不同",
+          "扬声器 → 耳机",
+          "pipe必然不同"
+        ],
+        [
+          "② pipe名称或标识相同",
+          "计划可为DEFAULT；与MOVE共分支",
+          "不会调用Move接口"
+        ],
+        [
+          "③ Move传入目标sinkName",
+          "CheckMove通过，且与当前sink相同\nHPAE成功早退，不向旧Renderer发移动",
+          "调用Move = 跨Renderer搬输入"
+        ],
+        [
+          "④ 后续设备route",
+          "普通运行流再按条件更新输出route",
+          "同sink意味着物理输出不变"
+        ]
+      ],
+      [
+        270,
+        550,
+        350
+      ],
+      21
+    ],
+    [
+      "text",
+      54,
+      630,
+      1170,
+      28,
+      "教学配置：两设备映射同一primary sink；真正跨sink的分支下一页展开",
+      22,
+      "navy",
+      true,
+      "left"
+    ]
+  ],
+  "script": "设备连接事件会触发输出重选。服务拿到当前输出流，按会话覆盖后的usage等信息批量求取新目标，更新每流的设备描述，然后选择和执行pipe计划。注意这里已经出现三个不同名字：物理设备、执行pipe、引擎里的sink。它们不是同一把编号尺。\n\n两个物理设备可能映射到同一条primary通路。Pipe选择判断是否同pipe时比较pipe的名称或标识，并不等于比较两个deviceId。于是耳机成为目标，不代表pipe一定换了；pipe没有换，也不能仅凭一个DEFAULT动作就断言后面没有Move接口调用。\n\n实际代码把DEFAULT和MOVE放在同一组处理分支，普通运行流仍可能进入MoveToNewOutputDevice，再把目标pipe的模块名称作为sinkName传到引擎。HPAE收到后先验证会话、目标和可移动性，再比较目标sinkName与当前名称。相同就成功返回，不向旧Renderer发起拆图；不同才请求跨Renderer迁移。\n\n现在可以给出一个完整反例。教学假设中，扬声器和这副耳机在产品配置里都映射到同一个primary sink。设备目标改变，策略可能仍调用Move方法，但引擎验证后发现sink相同，直接返回。运行流还可能按条件更新设备route，物理输出位置在设备适配侧发生变化。此时若我们画出旧SinkInput被搬到另一个Renderer，就是把并不存在的跨sink迁移加进了故事。\n\n所以看见一条Move日志，还需要追问它最终走到了哪个分支；看见设备切换成功，也不能立刻把它算成节点迁移优化的成果。这个区别能帮助定位问题：路由选错、pipe计划不同、实际节点迁移失败，是三类不同的排查入口。",
+  "sources": [
+    "批量选目标与执行pipe计划 L3534–3579：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/service/service_main/src/audio_core_service_private.cpp#L3534",
+    "IsSamePipe比较名称或标识 L349–356：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/pipe/src/audio_pipe_manager.cpp#L349",
+    "同pipe DEFAULT/否则MOVE L2217–2226：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/pipe/src/audio_pipe_selector.cpp#L2217",
+    "DEFAULT与MOVE共分支 L1087–1097：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/service/service_main/src/audio_core_service_private.cpp#L1087",
+    "目标pipe模块名作为sinkName L2361–2375：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/service/service_main/src/audio_core_service_private.cpp#L2361",
+    "CheckMove与同sink早退 L1030–1091：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_manager.cpp#L1030",
+    "Move后的条件路由更新 L1696–1713：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/service/service_main/src/audio_core_service_private.cpp#L1696"
+  ],
+  "question": "device已变、Move已调用，但验证后sinkName相同；旧Renderer会收到拆图请求吗？",
+  "answer": "不会，HPAE同sink成功早退。设备route仍按后续条件更新；调用Move不能证明发生了跨Renderer迁移。",
+  "condition": "普通运行且非重建等特殊路径；同sink早退须先通过CheckMove；产品映射需核对部署XML",
+  "minutes": 3,
+  "chapter": "故事三 · 三种标识与分支",
+  "prev": "策略给出设备以后，还要把结果映射为执行计划与引擎目标。",
+  "next": "明确目标sink不同且可移动后，才进入真正的输入迁移。",
+  "cue": "",
+  "sourceKeys": [
+    "batchevent",
+    "samepipe",
+    "pipe",
+    "action",
+    "targetname",
+    "move",
+    "route"
+  ],
+  "version": "three-stories"
+}

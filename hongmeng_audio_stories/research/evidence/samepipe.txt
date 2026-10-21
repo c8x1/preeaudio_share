@@ -1,0 +1,9 @@
+IsSamePipe比较名称或标识 L349–356：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/pipe/src/audio_pipe_manager.cpp#L349
+349: bool AudioPipeManager::IsSamePipe(std::shared_ptr<AudioPipeInfo> info, std::shared_ptr<AudioPipeInfo> cmpInfo)
+350: {
+351:     CHECK_AND_RETURN_RET_LOG(info && cmpInfo, false, "info or cmpInfo is nullptr");
+352:     if (info->name_ == cmpInfo->name_ || info->id_ == cmpInfo->id_) {
+353:         return true;
+354:     }
+355:     return false;
+356: }

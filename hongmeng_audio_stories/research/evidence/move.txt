@@ -1,0 +1,63 @@
+CheckMove与同sink早退 L1030–1091：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_manager.cpp#L1030
+1030: bool HpaeManager::CheckMoveSinkInput(uint32_t sinkInputId, const std::string &sinkName)
+1031: {
+1032:     if (rendererIdStreamInfoMap_.find(sinkInputId) == rendererIdStreamInfoMap_.end()) {
+1033:         HILOG_COMM_INFO("[CheckMoveSinkInput]move session:%{public}u failed,can not find session", sinkInputId);
+1034:         HpaeStreamMoveMonitor::ReportStreamMoveException(0, sinkInputId, HPAE_STREAM_CLASS_TYPE_PLAY,
+1035:             "", sinkName, "can not find session");
+1036:         return false;
+1037:     }
+1038:     std::shared_ptr<IHpaeRendererManager> oldRendererManager = GetRendererManagerById(sinkInputId);
+1039:     HpaeStreamInfo stream = rendererIdStreamInfoMap_[sinkInputId].streamInfo;
+1040:     if (oldRendererManager == nullptr) {
+1041:         HILOG_COMM_INFO("[CheckMoveSinkInput]move session:%{public}u failed,can not find sink", sinkInputId);
+1042:         HpaeStreamMoveMonitor::ReportStreamMoveException(stream.uid, sinkInputId, HPAE_STREAM_CLASS_TYPE_PLAY,
+1043:             "", sinkName, "src sink is not find");
+1044:         return false;
+1045:     }
+1046:     if (sinkName.empty()) {
+1047:         HILOG_COMM_INFO("[CheckMoveSinkInput]move session:%{public}u failed,sink name is empty.", sinkInputId);
+1048:         return false;
+1049:     }
+1050:     std::shared_ptr<IHpaeRendererManager> rendererManager = GetRendererManagerByName(sinkName);
+1051:     if (rendererManager == nullptr || !rendererManager->IsInit()) {
+1052:         HILOG_COMM_INFO("[CheckMoveSinkInput]move session:%{public}u failed, can not find sink:%{public}s "
+1053:             "or sink is not open.", sinkInputId, GetEncryptStr(sinkName).c_str());
+1054:         return false;
+1055:     }
+1056:     if (!rendererIdStreamInfoMap_[sinkInputId].streamInfo.isMoveAble) {
+1057:         HILOG_COMM_INFO("[CheckMoveSinkInput]move session:%{public}u failed,session is not moveable.", sinkInputId);
+1058:         HpaeStreamMoveMonitor::ReportStreamMoveException(stream.uid, sinkInputId, HPAE_STREAM_CLASS_TYPE_PLAY,
+1059:             rendererIdSinkNameMap_[sinkInputId], sinkName, "session is not moveable");
+1060:         return false;
+1061:     }
+1062:     return true;
+1063: }
+1064: 
+1065: int32_t HpaeManager::MoveSinkInputByIndexOrName(uint32_t sinkInputId, uint32_t sinkIndex, std::string sinkName)
+1066: {
+1067:     auto request = [this, sinkInputId, sinkName]() {
+1068:         if (!CheckMoveSinkInput(sinkInputId, sinkName)) {
+1069:             if (auto serviceCallback = serviceCallback_.lock()) {
+1070:                 serviceCallback->OnMoveSinkInputByIndexOrNameCb(ERROR_INVALID_PARAM);
+1071:             }
+1072:             return;
+1073:         }
+1074: 
+1075:         std::string name = rendererIdSinkNameMap_[sinkInputId];
+1076:         if (sinkName == name) {
+1077:             if (auto serviceCallback = serviceCallback_.lock()) {
+1078:                 serviceCallback->OnMoveSinkInputByIndexOrNameCb(SUCCESS);
+1079:             }
+1080:             return;
+1081:         }
+1082: 
+1083:         std::shared_ptr<IHpaeRendererManager> oldRendererManager = GetRendererManagerById(sinkInputId);
+1084:         AUDIO_INFO_LOG("start move session:%{public}u, [%{public}s] --> [%{public}s],state:%{public}d", sinkInputId,
+1085:             GetEncryptStr(name).c_str(), GetEncryptStr(sinkName).c_str(), rendererIdStreamInfoMap_[sinkInputId].state);
+1086:         movingIds_.emplace(sinkInputId, rendererIdStreamInfoMap_[sinkInputId].state);
+1087:         oldRendererManager->MoveStream(sinkInputId, sinkName);
+1088:     };
+1089:     SendRequest(request, __func__);
+1090:     return SUCCESS;
+1091: }

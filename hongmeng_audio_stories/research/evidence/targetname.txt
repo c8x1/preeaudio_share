@@ -1,0 +1,16 @@
+目标pipe模块名作为sinkName L2361–2375：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/service/service_main/src/audio_core_service_private.cpp#L2361
+2361:     // start move.
+2362:     uint32_t sinkId = -1; // invalid sink id, use sink name instead.
+2363:     std::vector<uint64_t> sessionIdForLog{};
+2364:     std::string sinkName = localDeviceDescriptor->deviceType_ == DEVICE_TYPE_REMOTE_CAST ?
+2365:             "RemoteCastInnerCapturer" : pipeInfo->moduleInfo_.name;
+2366:     for (size_t i = 0; i < sinkInputIds.size(); i++) {
+2367:         if (sinkName == BLUETOOTH_SPEAKER) {
+2368:             std::string activePort = BLUETOOTH_SPEAKER;
+2369:             audioPolicyManager_.SuspendAudioDevice(activePort, false);
+2370:         }
+2371:         int32_t ret = audioPolicyManager_.MoveSinkInputByIndexOrName(sinkInputIds[i].paStreamId, sinkId, sinkName);
+2372:         CHECK_AND_RETURN_RET_LOG(ret == SUCCESS, ERROR,
+2373:             "move [%{public}d] to local failed", sinkInputIds[i].streamId);
+2374:         sessionIdForLog.push_back(sinkInputIds[i].streamId);
+2375:         audioRouteMap_.AddRouteMapInfo(sinkInputIds[i].uid, LOCAL_NETWORK_ID, sinkInputIds[i].pid);

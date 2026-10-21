@@ -1,0 +1,47 @@
+批量选目标与执行pipe计划 L3534–3579：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/service/service_main/src/audio_core_service_private.cpp#L3534
+3534:     std::string fetchCaller = caller + "FetchOutputDeviceAndRoute";
+3535:     std::vector<FetchDeviceInfo> outInfos;
+3536:     for (auto &streamDesc : outputStreamDescs) {
+3537:         CHECK_AND_CONTINUE(streamDesc != nullptr);
+3538:         CHECK_AND_CONTINUE(!(VolumeUtils::IsPCVolumeEnable() && !isFirstScreenOn_.load()));
+3539:         CHECK_AND_CONTINUE(streamDesc->rendererTarget_ != INJECT_TO_VOICE_COMMUNICATION_CAPTURE);
+3540:         StreamUsage streamUsage = audioSessionService_.GetAudioSessionStreamUsageForDevice(GetRealPid(streamDesc));
+3541:         streamUsage = (streamUsage != StreamUsage::STREAM_USAGE_INVALID) ? streamUsage :
+3542:             streamDesc->rendererInfo_.streamUsage;
+3543:         FetchDeviceInfo info = { streamUsage, GetRealUid(streamDesc), streamDesc->GetRenderPrivacyType(),
+3544:             fetchCaller, streamDesc->bundleName_ };
+3545:         info.streamId = streamDesc->sessionId_;
+3546:         outInfos.push_back(info);
+3547:     }
+3548:     auto outResult = audioRouterCenter_.FetchOutputDevicesForAllOutputStreams(outInfos);
+3549:     for (auto &streamDesc : outputStreamDescs) {
+3550:         UpdateStreamDevicesForStart(streamDesc, fetchCaller, outResult);
+3551:     }
+3552: }
+3553: 
+3554: void AudioCoreService::UpdateStreamDevicesForStart(
+3555:     std::shared_ptr<AudioStreamDescriptor> &streamDesc, std::string caller,
+3556:     const AudioRouterCenter::OutputDeviceMap &outResult)
+3557: {
+3558:     CHECK_AND_RETURN_LOG(streamDesc != nullptr, "Invalid stream desc");
+3559:     pipeManager_->UpdateOldDeviceDesc(streamDesc, streamDesc->GetNewDeviceDescs());
+3560: 
+3561:     std::vector<std::shared_ptr<AudioDeviceDescriptor>> devices;
+3562:     if (VolumeUtils::IsPCVolumeEnable() && !isFirstScreenOn_.load()) {
+3563:         devices = std::vector<std::shared_ptr<AudioDeviceDescriptor>> {
+3564:             AudioDeviceManager::GetAudioDeviceManager().GetRenderDefaultDevice()
+3565:         };
+3566:     } else if (streamDesc->rendererTarget_ == INJECT_TO_VOICE_COMMUNICATION_CAPTURE) {
+3567:         devices = std::vector<std::shared_ptr<AudioDeviceDescriptor>> {
+3568:             make_shared<AudioDeviceDescriptor>(DeviceType::DEVICE_TYPE_SYSTEM_PRIVATE,
+3569:                 DeviceRole::OUTPUT_DEVICE)
+3570:         };
+3571:     } else {
+3572:         auto it = outResult.find(streamDesc->sessionId_);
+3573:         if (it != outResult.end()) {
+3574:             devices = it->second;
+3575:         }
+3576:     }
+3577: 
+3578:     CHECK_AND_RETURN_LOG(!devices.empty(), "devices is empty");
+3579:     pipeManager_->UpdateNewDeviceDescWithCheck(streamDesc, devices);

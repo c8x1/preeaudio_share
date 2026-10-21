@@ -1,0 +1,11 @@
+同pipe DEFAULT/否则MOVE L2217–2226：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/pipe/src/audio_pipe_selector.cpp#L2217
+2217: AudioStreamAction AudioPipeSelector::JudgeStreamAction(
+2218:     std::shared_ptr<AudioPipeInfo> newPipe, std::shared_ptr<AudioPipeInfo> oldPipe)
+2219: {
+2220:     CHECK_AND_RETURN_RET(!IsRemoteOffloadNeedRecreate(newPipe, oldPipe), AUDIO_STREAM_ACTION_RECREATE);
+2221: 
+2222:     if (AudioPipeManager::GetPipeManager()->IsSamePipe(newPipe, oldPipe)) {
+2223:         return AUDIO_STREAM_ACTION_DEFAULT;
+2224:     }
+2225:     return AUDIO_STREAM_ACTION_MOVE;
+2226: }

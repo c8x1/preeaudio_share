@@ -1,0 +1,12 @@
+DEFAULT与MOVE共分支 L1087–1097：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/service/service_main/src/audio_core_service_private.cpp#L1087
+1087:             case AUDIO_STREAM_ACTION_DEFAULT:
+1088:             case AUDIO_STREAM_ACTION_MOVE:
+1089:                 CheckAndUpdateOffloadEnableForStream(OFFLOAD_MOVE_OUT, desc, pipeInfo->id_);
+1090:                 if (desc->streamStatus_ != STREAM_STATUS_STARTED ||
+1091:                     pipeManager_->IsFocusStandby(desc->sessionId_)) {
+1092:                     MoveStreamSink(desc, pipeInfo, reason);
+1093:                 } else {
+1094:                     MoveToNewOutputDevice(desc, pipeInfo, reason);
+1095:                 }
+1096:                 CheckAndUpdateOffloadEnableForStream(OFFLOAD_MOVE_IN, desc, pipeInfo->id_);
+1097:                 break;

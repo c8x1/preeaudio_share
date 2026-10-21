@@ -1,0 +1,19 @@
+Move后的条件路由更新 L1696–1713：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/service/service_main/src/audio_core_service_private.cpp#L1696
+1696:     auto pipeDeviceVolumeGroup = AudioPipeManager::GetPipeManager()->GetPipeDeviceVolumeInfoForPipe(pipeInfo);
+1697:     AudioAdapterManager::GetInstance().UpdateAudioPipeVolume(pipeDeviceVolumeGroup);
+1698: 
+1699:     auto ret = (newDeviceDesc->networkId_ == LOCAL_NETWORK_ID)
+1700:         ? MoveToLocalOutputDevice(targetSinkInputs, pipeInfo, newDeviceDesc)
+1701:         : MoveToRemoteOutputDevice(targetSinkInputs, pipeInfo, newDeviceDesc);
+1702:     CHECK_AND_CALL_FUNC_RETURN_HILOG(ret == SUCCESS,
+1703:         StreamDfxManager::GetInstance().SendAudioErrorEvent(IPCSkeleton::GetCallingUid(),
+1704:             ERR_PLAY_DEVICE_SWITCH_OPERATION_FAILED, "MoveToNewOutputDevice failed", false),
+1705:         "[MoveToNewOutputDevice]Move sink faild!");
+1706: 
+1707:     sleAudioDeviceManager_.UpdateSleStreamTypeCount(streamDesc, false);
+1708:     bool shouldUpdateOutputRoute = ShouldUpdateOutputRoute(streamDesc, reason);
+1709:     if (pipeManager_->GetUpdateRouteSupport() && shouldUpdateOutputRoute) {
+1710:         UpdateOutputRoute(streamDesc, pipeInfo->id_);
+1711:     }
+1712: 
+1713:     streamCollector_.UpdateRendererDeviceInfo(newDeviceDesc);
