@@ -1,0 +1,153 @@
+{
+  "n": 3,
+  "title": "线程合并以后，Pause 在哪里等？",
+  "takeaway": "Notify 唤醒等待，不会抢占正在执行的 RenderFrame",
+  "outcome": "能预测Process期间发布的Pause要等当前调用返回和后续消费，理解线程合并的约束。",
+  "elements": [
+    [
+      "text",
+      54,
+      207,
+      1170,
+      36,
+      "设备处理线程：函数执行顺序，不按真实耗时缩放",
+      24,
+      "navy",
+      true,
+      "left"
+    ],
+    [
+      "node",
+      54,
+      285,
+      230,
+      78,
+      "HandleMsg",
+      "blue",
+      26
+    ],
+    [
+      "node",
+      316,
+      285,
+      635,
+      78,
+      "Process：拉图 → SinkOutput → RenderFrame",
+      "teal",
+      23
+    ],
+    [
+      "node",
+      984,
+      285,
+      240,
+      78,
+      "下一轮 HandleMsg",
+      "blue",
+      23
+    ],
+    [
+      "arrow",
+      284,
+      325,
+      316,
+      325,
+      "blue",
+      false
+    ],
+    [
+      "arrow",
+      951,
+      325,
+      984,
+      325,
+      "blue",
+      false
+    ],
+    [
+      "text",
+      600,
+      394,
+      585,
+      37,
+      "RenderFrame 尚未返回",
+      25,
+      "teal",
+      true,
+      "left"
+    ],
+    [
+      "node",
+      575,
+      464,
+      295,
+      80,
+      "控制侧另一线程\n发布Pause / Notify",
+      "amber",
+      22
+    ],
+    [
+      "arrow",
+      870,
+      504,
+      1104,
+      504,
+      "amber",
+      false
+    ],
+    [
+      "text",
+      878,
+      454,
+      310,
+      35,
+      "留待后续消费",
+      22,
+      "amber",
+      false,
+      "left"
+    ],
+    [
+      "line",
+      1104,
+      364,
+      1104,
+      445,
+      "blue",
+      2,
+      true
+    ],
+    [
+      "text",
+      54,
+      570,
+      1170,
+      45,
+      "少一次跨线程中转；设备调用耗时也会占用这个控制执行上下文",
+      27,
+      "navy",
+      true,
+      "left"
+    ]
+  ],
+  "script": "接着看自研 HPAE。设备处理线程的循环先 HandleMsg，再 Process。满足运行和供数等条件时，Process 调用 OutputCluster，进入 SinkOutput；输出端按需要向上游 Pull，得到处理结果，最后在这条调用链内调用 RenderFrame。原先这段“渲染侧 post，另一线程 get 后写”的中转，在选定的新路径里收拢到了同一个设备处理线程。\n\n这带来一个具体收益：这段链路不用再靠那一次跨线程交接才能继续提交。也带来一个必须面对的约束：假设当前 RenderFrame 还没有返回，此时 Pause 已经进入设备队列，它能立即修改这轮执行吗？答案是不能。Notify 可以发信号，却不会抢占当前的函数调用。线程要先从 RenderFrame 返回，完成本轮 Process 的后续工作，再回到循环中的 HandleMsg，才消费后续请求。若之后的 HandleMsg 又遇到摘批边界，请求还要遵循队列的批次规则。\n\n因此合并职责要一起考察设备调用耗时和控制响应。源码能证明调用关系改变了；在具体设备上省了多少唤醒、Pause 的响应分布怎样，仍要测量。线程少了一段交接，不意味着所有等待都消失了。",
+  "sources": [
+    "设备线程Run与Notify L76–125：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_signal_process_thread.cpp#L76",
+    "Renderer Process L1640–1664：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1640",
+    "SinkOutput提交与余量搬移 L121–165：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L121"
+  ],
+  "question": "RenderFrame还没返回，Pause已经发布，它会立刻拆图吗？",
+  "answer": "不会。普通设备线程先完成当前Process，再到后续HandleMsg按批次消费；Notify不抢占函数执行。",
+  "condition": "限定普通HPAE设备线程调用链；不声明驱动无其他线程，也不保证固定调度周期",
+  "minutes": 3,
+  "chapter": "故事一 · 执行组织的取舍",
+  "prev": "旧PA通过dq交接，新路径沿设备处理调用链直接提交。",
+  "next": "少了中转，为什么仍有Buffer？逐字节算四轮输出。",
+  "cue": "",
+  "sourceKeys": [
+    "run",
+    "process",
+    "sink"
+  ],
+  "version": "three-stories"
+}

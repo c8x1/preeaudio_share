@@ -1,0 +1,51 @@
+设备线程Run与Notify L76–125：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_signal_process_thread.cpp#L76
+76: void HpaeSignalProcessThread::Notify()
+77: {
+78:     std::unique_lock<std::mutex> lock(mutex_);
+79:     recvSignal_.store(true);
+80:     condition_.notify_all();
+81: }
+82: 
+83: void HpaeSignalProcessThread::Run()
+84: {
+85:     if (isFastThread_) {
+86:         BindCore();
+87:         bool setPriorityResult = SetHpaeDataThreadPriority();
+88:         if (!setPriorityResult) {
+89:             SetThreadQosLevel();
+90:         }
+91:     } else {
+92:         int32_t setPriority = GetIntParameter("const.multimedia.audio_setPriority", 1);
+93:         SetThreadQosLevelAsync(setPriority);
+94:     }
+95:     auto manager = streamManager_.lock();
+96:     while (running_.load() && manager != nullptr) {
+97:         {
+98:             std::unique_lock<std::mutex> lock(mutex_);
+99:             condition_.wait(lock, [this, manager] {
+100:                 return !running_.load() || manager->IsRunning() ||
+101:                     manager->IsMsgProcessing() || recvSignal_.load();
+102:             });
+103:         }
+104:         manager->HandleMsg();
+105:         manager->Process();
+106:         recvSignal_.store(false);
+107:     }
+108:     ResetThreadQosLevel();
+109: }
+110: 
+111: void HpaeSignalProcessThread::SleepUntilNotify(int64_t sleepInUs)
+112: {
+113:     auto manager = streamManager_.lock();
+114:     CHECK_AND_RETURN(manager);
+115:     std::unique_lock<std::mutex> lock(mutex_);
+116:     auto duration = std::chrono::microseconds(sleepInUs);
+117:     condition_.wait_for(lock, duration, [this, manager] {
+118:         return !running_.load() ||
+119:                manager->IsMsgProcessing() ||
+120:                recvSignal_.load();
+121:     });
+122: }
+123: }  // namespace HPAE
+124: }  // namespace AudioStandard
+125: }  // namespace OHOS
