@@ -1,0 +1,46 @@
+RenderWrite与原始chunk引用 L374–418：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L374
+374: 
+375: static ssize_t RenderWrite(struct SinkAdapter *sinkAdapter, pa_memchunk *pchunk)
+376: {
+377:     size_t index;
+378:     size_t length;
+379:     ssize_t count = 0;
+380:     void *p = NULL;
+381: 
+382:     CHECK_AND_RETURN_RET_LOG(pchunk != NULL, 0, "pchunk is null");
+383: 
+384:     index = pchunk->index;
+385:     length = pchunk->length;
+386:     p = pa_memblock_acquire(pchunk->memblock);
+387:     pa_assert(p);
+388: 
+389:     while (true) {
+390:         uint64_t writeLen = 0;
+391: 
+392:         int32_t ret = sinkAdapter->SinkAdapterRenderFrame(sinkAdapter, ((char*)p + index),
+393:             (uint64_t)length, &writeLen);
+394:         if (writeLen > length) {
+395:             AUDIO_ERR_LOG("Error writeLen > actual bytes. Length: %zu, Written: %" PRIu64 " bytes, %d ret",
+396:                          length, writeLen, ret);
+397:             count = -1 - count;
+398:             break;
+399:         }
+400:         if (writeLen == 0) {
+401:             AUDIO_ERR_LOG("Failed to render Length: %{public}zu, Written: %{public}" PRIu64 " bytes, %{public}d ret",
+402:                 length, writeLen, ret);
+403:             count = -1 - count;
+404:             break;
+405:         } else {
+406:             count += (ssize_t)writeLen;
+407:             index += writeLen;
+408:             length -= writeLen;
+409:             if (length == 0) {
+410:                 break;
+411:             }
+412:         }
+413:     }
+414:     pa_memblock_release(pchunk->memblock);
+415:     pa_memblock_unref(pchunk->memblock);
+416: 
+417:     return count;
+418: }

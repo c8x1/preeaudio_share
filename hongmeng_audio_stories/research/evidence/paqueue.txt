@@ -1,0 +1,141 @@
+PA post/send/get/done同步与引用 L124–263：https://gitcode.com/openharmony/third_party_pulseaudio/blob/bc6e4fe58232dbad60ae6ee5d83cf46d0fe9b3ca/src/pulsecore/asyncmsgq.c#L124
+124: void pa_asyncmsgq_post(pa_asyncmsgq *a, pa_msgobject *object, int code, const void *userdata, int64_t offset, const pa_memchunk *chunk, pa_free_cb_t free_cb) {
+125:     struct asyncmsgq_item *i;
+126:     pa_assert(PA_REFCNT_VALUE(a) > 0);
+127: 
+128:     char t[PA_SNPRINTF_STR_LENGTH] = {0};
+129:     pa_snprintf(t, sizeof(t), "pa_asyncmsgq_post[%d] <msgqNo.%u> msg_wait_for_read:%u", code, a->mark,
+130:         PaAsyncqGetNumToRead(a->asyncq));
+131:     CallStart(t);
+132: 
+133:     if (!(i = pa_flist_pop(PA_STATIC_FLIST_GET(asyncmsgq))))
+134:         i = pa_xnew(struct asyncmsgq_item, 1);
+135: 
+136:     i->code = code;
+137:     i->object = object ? pa_msgobject_ref(object) : NULL;
+138:     i->userdata = (void*) userdata;
+139:     i->free_cb = free_cb;
+140:     i->offset = offset;
+141:     if (chunk) {
+142:         pa_assert(chunk->memblock);
+143:         i->memchunk = *chunk;
+144:         pa_memblock_ref(i->memchunk.memblock);
+145:     } else
+146:         pa_memchunk_reset(&i->memchunk);
+147:     i->semaphore = NULL;
+148: 
+149:     /* This mutex makes the queue multiple-writer safe. This lock is only used on the writing side */
+150:     pa_mutex_lock(a->mutex);
+151:     pa_asyncq_post(a->asyncq, i);
+152:     pa_mutex_unlock(a->mutex);
+153:     CallEnd();
+154: }
+155: 
+156: int pa_asyncmsgq_send(pa_asyncmsgq *a, pa_msgobject *object, int code, const void *userdata, int64_t offset, const pa_memchunk *chunk) {
+157:     struct asyncmsgq_item i;
+158:     pa_assert(PA_REFCNT_VALUE(a) > 0);
+159: 
+160:     pa_usec_t startTime = pa_rtclock_now();
+161:     char t[PA_SNPRINTF_STR_LENGTH] = {0};
+162:     pa_snprintf(t, sizeof(t), "pa_asyncmsgq_send[%d] <msgqNo.%u> msg_wait_for_read:%u", code, a->mark,
+163:         PaAsyncqGetNumToRead(a->asyncq));
+164:     CallStart(t);
+165:     i.code = code;
+166:     i.object = object;
+167:     i.userdata = (void*) userdata;
+168:     i.free_cb = NULL;
+169:     i.ret = -1;
+170:     i.offset = offset;
+171:     if (chunk) {
+172:         pa_assert(chunk->memblock);
+173:         i.memchunk = *chunk;
+174:     } else
+175:         pa_memchunk_reset(&i.memchunk);
+176: 
+177:     if (!(i.semaphore = pa_flist_pop(PA_STATIC_FLIST_GET(semaphores))))
+178:         i.semaphore = pa_semaphore_new(0);
+179: 
+180:     /* This mutex makes the queue multiple-writer safe. This lock is only used on the writing side */
+181:     pa_mutex_lock(a->mutex);
+182:     pa_assert_se(pa_asyncq_push(a->asyncq, &i, true) == 0);
+183:     pa_mutex_unlock(a->mutex);
+184: 
+185:     pa_semaphore_wait(i.semaphore);
+186: 
+187:     if (pa_flist_push(PA_STATIC_FLIST_GET(semaphores), i.semaphore) < 0)
+188:         pa_semaphore_free(i.semaphore);
+189:     CallEnd();
+190:     pa_usec_t executionTime = pa_rtclock_now() - startTime;
+191:     if (executionTime > OH_DAEMON_TIMEOUT_THRESHOLD_ON_US) { // too long block of daemon thread, dangerous
+192:         AUDIO_WARNING_LOG("Execution time of this msg is too long: qLen[%{public}u], MSG[%{public}d] " \
+193:             "(%{public}" PRIu64 "ms)",
+194:             PaAsyncqGetNumToRead(a->asyncq), code, executionTime / PA_USEC_PER_MSEC);
+195:     }
+196:     return i.ret;
+197: }
+198: 
+199: int pa_asyncmsgq_get(pa_asyncmsgq *a, pa_msgobject **object, int *code, void **userdata, int64_t *offset, pa_memchunk *chunk, bool wait_op) {
+200:     pa_assert(PA_REFCNT_VALUE(a) > 0);
+201:     pa_assert(!a->current);
+202: 
+203:     if (!(a->current = pa_asyncq_pop(a->asyncq, wait_op))) {
+204: /*         pa_log("failure"); */
+205:         return -1;
+206:     }
+207: 
+208: /*     pa_log("success"); */
+209: 
+210:     char t[PA_SNPRINTF_STR_LENGTH] = {0};
+211:     pa_snprintf(t, sizeof(t), "pa_asyncmsgq_get[%d] <msgqNo.%u> msg_wait_for_read:%u", a->current->code, a->mark,
+212:         PaAsyncqGetNumToRead(a->asyncq));
+213:     CallStart(t);
+214:     if (code)
+215:         *code = a->current->code;
+216:     if (userdata)
+217:         *userdata = a->current->userdata;
+218:     if (offset)
+219:         *offset = a->current->offset;
+220:     if (object) {
+221:         if ((*object = a->current->object))
+222:             pa_msgobject_assert_ref(*object);
+223:     }
+224:     if (chunk)
+225:         *chunk = a->current->memchunk;
+226: 
+227: /*     pa_log_debug("Get q=%p object=%p (%s) code=%i data=%p chunk.length=%lu", */
+228: /*                  (void*) a, */
+229: /*                  (void*) a->current->object, */
+230: /*                  a->current->object ? a->current->object->parent.type_name : NULL, */
+231: /*                  a->current->code, */
+232: /*                  (void*) a->current->userdata, */
+233: /*                  (unsigned long) a->current->memchunk.length); */
+234: 
+235:     CallEnd();
+236:     return 0;
+237: }
+238: 
+239: void pa_asyncmsgq_done(pa_asyncmsgq *a, int ret) {
+240:     pa_assert(PA_REFCNT_VALUE(a) > 0);
+241:     pa_assert(a);
+242:     pa_assert(a->current);
+243: 
+244:     if (a->current->semaphore) {
+245:         a->current->ret = ret;
+246:         pa_semaphore_post(a->current->semaphore);
+247:     } else {
+248: 
+249:         if (a->current->free_cb)
+250:             a->current->free_cb(a->current->userdata);
+251: 
+252:         if (a->current->object)
+253:             pa_msgobject_unref(a->current->object);
+254: 
+255:         if (a->current->memchunk.memblock)
+256:             pa_memblock_unref(a->current->memchunk.memblock);
+257: 
+258:         if (pa_flist_push(PA_STATIC_FLIST_GET(asyncmsgq), a->current) < 0)
+259:             pa_xfree(a->current);
+260:     }
+261: 
+262:     a->current = NULL;
+263: }

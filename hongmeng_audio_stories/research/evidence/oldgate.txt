@@ -1,0 +1,53 @@
+旧普通主输出dflag门控 L3523–3574：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L3523
+3523: static void ProcessNormalData(struct Userdata *u)
+3524: {
+3525:     AUTO_CTRACE("ProcessNormalData");
+3526:     int64_t sleepForUsec = -1;
+3527:     pa_usec_t now = 0;
+3528: 
+3529:     if (u->sink->thread_info.state == PA_SINK_SUSPENDED) {
+3530:         ReleaseEffectBufferAndLimiter(u);
+3531:     }
+3532: 
+3533:     bool flag = (((u->render_in_idle_state && PA_SINK_IS_OPENED(u->sink->thread_info.state)) ||
+3534:                 (!u->render_in_idle_state && PA_SINK_IS_RUNNING(u->sink->thread_info.state))) &&
+3535:                 !(u->sink->thread_info.state == PA_SINK_IDLE && u->primary.previousState == PA_SINK_SUSPENDED) &&
+3536:                 !(u->sink->thread_info.state == PA_SINK_IDLE && u->primary.previousState == PA_SINK_INIT)) ||
+3537:                 (u->sink->thread_info.state == PA_SINK_IDLE && monitorLinked(u->sink, true));
+3538:     if (flag) {
+3539:         now = pa_rtclock_now();
+3540:     }
+3541: 
+3542:     if (PA_UNLIKELY(u->sink->thread_info.rewind_requested)) {
+3543:         pa_sink_process_rewind(u->sink, 0);
+3544:     }
+3545: 
+3546:     if (flag) {
+3547:         pa_usec_t frameUsec = pa_bytes_to_usec(u->sink->thread_info.max_request, &u->sink->sample_spec);
+3548:         pa_usec_t blockTime = u->primary.timestamp + frameUsec - now;
+3549:         if (blockTime > frameUsec) { blockTime = frameUsec; }
+3550:         if (pa_atomic_load(&u->primary.dflag) == 1) {
+3551:             sleepForUsec = (int64_t)blockTime -
+3552:                 ((int64_t)pa_rtclock_now() - (int64_t)(u->primary.lastProcessDataTime));
+3553:             if (sleepForUsec < MIN_SLEEP_FOR_USEC) {
+3554:                 sleepForUsec = MIN_SLEEP_FOR_USEC;
+3555:             }
+3556:         } else {
+3557:             if (u->primary.timestamp <= now + u->primary.prewrite || !strcmp(u->sink->name, DP_SINK_NAME)) {
+3558:                 pa_atomic_add(&u->primary.dflag, 1);
+3559:                 u->primary.lastProcessDataTime = pa_rtclock_now();
+3560:                 ProcessRenderUseTiming(u, now);
+3561:             }
+3562:             sleepForUsec = (int64_t)blockTime - ((int64_t)pa_rtclock_now() - (int64_t)now);
+3563:             if (u->primary.timestamp <= now + u->primary.prewrite) {
+3564:                 sleepForUsec = PA_MIN(sleepForUsec, (int64_t)u->primary.writeTime);
+3565:             }
+3566:         }
+3567:         sleepForUsec = PA_MAX(sleepForUsec, 0);
+3568:     }
+3569: 
+3570:     if (sleepForUsec != -1) {
+3571:         if (u->timestampSleep == -1) {
+3572:             u->timestampSleep = (int64_t)pa_rtclock_now() + sleepForUsec;
+3573:         } else {
+3574:             u->timestampSleep = PA_MIN(u->timestampSleep, (int64_t)pa_rtclock_now() + sleepForUsec);

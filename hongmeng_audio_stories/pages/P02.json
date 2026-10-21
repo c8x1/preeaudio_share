@@ -1,0 +1,247 @@
+{
+  "n": 2,
+  "title": "A 已经生成，为什么 B 还在上游？",
+  "takeaway": "旧主输出有跨线程交接，也有 dflag 门控生产节奏",
+  "outcome": "能预测写端未清忙时不会在此路径继续生成B，区分交接等待与无限队列积压。",
+  "elements": [
+    [
+      "text",
+      60,
+      205,
+      240,
+      40,
+      "PA渲染线程",
+      23,
+      "navy",
+      true,
+      "center"
+    ],
+    [
+      "line",
+      180,
+      252,
+      180,
+      627,
+      "light",
+      2,
+      false
+    ],
+    [
+      "text",
+      380,
+      205,
+      240,
+      40,
+      "primary.dq",
+      23,
+      "navy",
+      true,
+      "center"
+    ],
+    [
+      "line",
+      500,
+      252,
+      500,
+      627,
+      "light",
+      2,
+      false
+    ],
+    [
+      "text",
+      700,
+      205,
+      240,
+      40,
+      "HDI写线程",
+      23,
+      "navy",
+      true,
+      "center"
+    ],
+    [
+      "line",
+      820,
+      252,
+      820,
+      627,
+      "light",
+      2,
+      false
+    ],
+    [
+      "text",
+      990,
+      205,
+      240,
+      40,
+      "设备接口",
+      23,
+      "navy",
+      true,
+      "center"
+    ],
+    [
+      "line",
+      1110,
+      252,
+      1110,
+      627,
+      "light",
+      2,
+      false
+    ],
+    [
+      "node",
+      54,
+      269,
+      250,
+      54,
+      "dflag++，生成 A",
+      "navy",
+      22
+    ],
+    [
+      "arrow",
+      180,
+      355,
+      500,
+      355,
+      "blue",
+      false
+    ],
+    [
+      "text",
+      188,
+      324,
+      306,
+      29,
+      "post：A 的引用",
+      22,
+      "blue",
+      false,
+      "left"
+    ],
+    [
+      "arrow",
+      500,
+      410,
+      820,
+      410,
+      "blue",
+      false
+    ],
+    [
+      "text",
+      508,
+      379,
+      306,
+      29,
+      "get：取出 A",
+      22,
+      "blue",
+      false,
+      "left"
+    ],
+    [
+      "text",
+      54,
+      425,
+      430,
+      70,
+      "下一轮见 dflag == 1\n等待，尚不生成 B",
+      23,
+      "amber",
+      true,
+      "left"
+    ],
+    [
+      "arrow",
+      820,
+      487,
+      1110,
+      487,
+      "teal",
+      false
+    ],
+    [
+      "text",
+      828,
+      456,
+      276,
+      29,
+      "RenderWrite / RenderFrame",
+      18,
+      "teal",
+      false,
+      "left"
+    ],
+    [
+      "arrow",
+      820,
+      558,
+      180,
+      558,
+      "teal",
+      true
+    ],
+    [
+      "text",
+      330,
+      520,
+      470,
+      34,
+      "写端完成后 atomic dflag--",
+      22,
+      "teal",
+      false,
+      "left"
+    ],
+    [
+      "arrow",
+      180,
+      618,
+      500,
+      618,
+      "blue",
+      false
+    ],
+    [
+      "text",
+      188,
+      587,
+      306,
+      29,
+      "后续轮次才生成、投递 B",
+      20,
+      "blue",
+      false,
+      "left"
+    ]
+  ],
+  "script": "音乐正在播放。我们先不看整个系统，只跟踪一块已经处理好的声音数据，叫它 A。混音和处理都完成了，A 是否马上就能进入设备？这个问题看起来简单，却能把“处理得快”和“送得及时”分开。\n\n先看 OpenHarmony 5.1 的普通主输出。PA 的 sink 渲染侧生成一个 chunk，它记录内存块、起始位置和长度。随后不是在这里直接写设备，而是把一个 HDI_RENDER 消息连同 chunk 投到 primary.dq。另一个专门的 HDI 写线程从这个队列取消息，遇到 HDI_RENDER，才进入 RenderWrite，调用设备适配器的 RenderFrame。\n\n所以 A 在渲染侧完成时，完成的只是“已经有可提交的数据”。写线程是否已经得到运行机会，是下一件事。即使两段计算都很短，中间仍有一次跨线程交接。队列把两种职责分开，也把它们交给调度器协调。\n\n这里先停一下：如果写线程暂时没运行，渲染线程是否会不断生成 B、C，让队列越来越长？在这条实际路径上，不能这样画。ProcessNormalData 还检查一个 dflag：准备生成 A 时把它置忙；写端处理完 A 后再清除。忙标志还在，后续渲染轮次会等待，不再生成下一块主输出。这是背压，不能把它省略后批评旧方案无限积压。\n\n现在推演一次合法交错。第一步，渲染侧置忙、生成 A、投递消息。第二步，写线程尚未获得调度，A 留在交接队列；后续 B 的数据需求仍在上游，尚未成为下一块主输出。第三步，渲染侧再次到达检查点，发现忙标志仍在，于是按路径安排等待。第四步，写线程取出 A，调用设备接口，写完后清忙。第五步，后续渲染轮次才有机会生成并投递 B。\n\n这段等待未必每轮都明显，也没有一个凭源码就能填上的固定毫秒数。但等待的来源已经可定位：数据生产和设备提交之间存在调度交接，背压又让下一次生产依赖写端进度。我们要优化的是这段组织成本，不能只盯着混音函数执行了多久。\n\n请再比较两个时刻：渲染函数返回时，我们知道 A 的数据准备完成；写线程完成设备调用时，我们才知道这次提交走完。假如只给渲染函数打点，就会漏掉两者之间的等待；假如只测 RenderFrame，也会漏掉写线程得到 A 之前的时间。因此验证这段优化，至少要沿同一块数据关联“生成、投递、取出、提交”几个事件。还要观察队列等待与门控等待的分布，不能用一次顺利执行代替长期表现。这个定位方法比记住某个线程名称更有用：先把数据跨越的执行边界找出来，再决定在哪些边界打点。\n\n再追一个容易误判的细节：过队列是不是就复制了一整块声音？这里 post 复制 chunk 描述符并增加内存块引用，get 取出描述符；没有在这段代码中发现整块 PCM 的 memcpy。正常写路径 acquire 内存后按实际写入长度推进位置，最终 release、unref；消息 done 还释放队列持有的引用。所以图上应画“引用跨线程交接”，不能随手画成“再复制一份 PCM”。",
+  "sources": [
+    "旧PA渲染与post L2449–2477：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L2449",
+    "旧普通主输出dflag门控 L3523–3574：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L3523",
+    "旧写线程get、写入、清dflag L3821–3887：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L3821",
+    "RenderWrite与原始chunk引用 L374–418：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L374",
+    "PA post/send/get/done同步与引用 L124–263：https://gitcode.com/openharmony/third_party_pulseaudio/blob/bc6e4fe58232dbad60ae6ee5d83cf46d0fe9b3ca/src/pulsecore/asyncmsgq.c#L124"
+  ],
+  "question": "写线程尚未得到调度，render会继续post B、C吗？",
+  "answer": "本普通路径不会；dflag==1时安排等待，下一块生成依赖写端清忙。虚线表示共享标志依赖，不是额外消息。",
+  "condition": "5.1普通主输出的合法交错，不按耗时绘制；post传chunk引用，非此处整块PCM复制",
+  "minutes": 5,
+  "chapter": "故事一 · 等待边界",
+  "prev": "从全局控制转到一块已经处理完成的数据A。",
+  "next": "HPAE收拢了这段交接，新的同线程执行又有什么约束？",
+  "cue": "",
+  "sourceKeys": [
+    "oldpost",
+    "oldgate",
+    "oldwriter",
+    "oldwrite",
+    "paqueue"
+  ],
+  "version": "three-stories"
+}
