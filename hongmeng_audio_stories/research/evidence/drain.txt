@@ -1,0 +1,42 @@
+公共服务迟到Drain状态保护 L437–477：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L437
+437:         case OPERATION_STOPPED:
+438:             hasSessionEffect_.store(false);
+439:             status_ = I_STATUS_STOPPED;
+440:             stateListener->OnOperationHandled(STOP_STREAM, 0);
+441:             audioServerBuffer_->GetStreamStatus()->store(STREAM_STOPPED);
+442:             HandleOperationStopped(RENDERER_STAGE_STOP_OK);
+443:             OnCheckActiveMusicTime("Stopped");
+444:             break;
+445:         case OPERATION_UPDATE_SPANSIZE:
+446:             RefreshServerBufferForSpanSizeUpdate(stateListener);
+447:             break;
+448:         case OPERATION_FLUSHED:
+449:             HandleOperationFlushed();
+450:             stateListener->OnOperationHandled(FLUSH_STREAM, 0);
+451:             break;
+452:         case OPERATION_DRAINED:
+453:             // Client's StopAudioStream will call Drain first and then Stop. If server's drain times out,
+454:             // Stop will be completed first. After a period of time, when Drain's callback goes here,
+455:             // state of server should not be changed to STARTED while the client state is Stopped.
+456:             OnStatusUpdateExt(operation, stateListener);
+457:             break;
+458:         default:
+459:             OnStatusUpdateSub(operation);
+460:     }
+461:     AudioService::GetInstance()->RenderersCheckForAudioWorkgroup(processConfig_.appInfo.appPid);
+462: }
+463: 
+464: int64_t RendererInServer::GetLastAudioDuration()
+465: {
+466:     auto ret = lastStopTime_ - lastStartTime_;
+467:     return ret < 0 ? -1 : ret;
+468: }
+469: 
+470: void RendererInServer::OnStatusUpdateExt(IOperation operation, std::shared_ptr<IStreamListener> stateListener)
+471: {
+472:     if (status_ == I_STATUS_DRAINING) {
+473:         status_ = I_STATUS_STARTED;
+474:         stateListener->OnOperationHandled(DRAIN_STREAM, 0);
+475:     }
+476:     afterDrain = true;
+477:     AudioPerformanceMonitor::GetInstance().StartSilenceMonitor(streamIndex_,
