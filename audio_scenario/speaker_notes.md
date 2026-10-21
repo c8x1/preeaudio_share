@@ -1,6 +1,6 @@
 # 一首歌，三个操作 · 讲稿
 
-八页主讲，按点击顺序揭示。正文为口播语言；演示顺序、范围与源码依据见文末备讲附录。时长需以实际试讲为准。
+十一页主讲，按点击顺序揭示。正文为口播语言；演示顺序、范围与源码依据见文末备讲附录。时长需以实际试讲为准。
 
 ## 1. 一首歌，三个操作
 
@@ -56,7 +56,41 @@
 
 量级也有数：短淡出按 5 毫秒设计，默认淡出在一轮数据之内完成。都是毫秒级的事，但一步都省不掉。
 
-## 7. 三个保证，落在代码的哪里？
+接下来三页，用这套角色把一次暂停、一次恢复交错、一次切耳机，完整走一遍时序。
+
+## 7. 一次暂停，从头到尾
+
+把上一页的模型跑一遍：一次暂停，从头到尾。
+
+应用发出暂停请求。渲染管理器不自己动手，把请求丢进队列。信号处理线程被唤醒，先排空队列：执行暂停请求——不碰连接，只在增益节点上挂一个淡出标志，会话状态改成“暂停中”。
+
+然后线程照常跑音频处理。处理链看到淡出标志，就在真实数据上逐帧把增益降下来。降到零的那一刻，处理链就地发回“淡出完成”。
+
+注意这个回调的去向：它回到渲染管理器，又变成一个请求进队列。线程下一轮排空队列时执行收尾：查状态、停音效、断输入、把状态改成“已暂停”，最后把状态回调给应用。
+
+一次暂停，两个请求，中间夹着一段毫秒级的淡出。前面讲的时间轴，落到角色上就是这一条链。
+
+## 8. 恢复抢先一步，时序会怎样？
+
+同一套角色，换个剧本：收尾还在队里，用户已经点了恢复。
+
+恢复请求进来，也进队列——排在了旧收尾前面。线程先执行它：状态改成“运行中”，接上输入，挂好淡入，启动音效，处理链带着淡入继续跑。
+
+然后才轮到那条旧的暂停收尾。它执行的第一件事是查状态：已经在运行？好，这次收尾就地结束，不碰音效，不碰输入。
+
+应用最终收到的状态回调是“运行中”。一次交错，被两条小规则消化：先到先执行，动手前看状态。
+
+## 9. 切到耳机：三方接力
+
+切耳机是三方接力：设备策略、管理器、两侧渲染。
+
+策略已经选定耳机。管理器向旧设备侧发起迁移。旧侧摘除这路音乐的连接，但输入节点带着自己的状态保留下来，交还给管理器——音乐 A 还是那个音乐 A。
+
+管理器把节点交给目标侧。目标侧接手后：设备信息改成耳机，处理粒度按目标的帧长和采样率调整，处理簇就绪之后，只有正在运行的会话才接进新链。
+
+最后归属更新，迁移完成。节点不换人，参数跟设备走——这就是“同一路音乐”在代码里的样子。
+
+## 10. 三个保证，落在代码的哪里？
 
 把三个保证落到代码上看，每个都不大。
 
@@ -70,7 +104,7 @@
 
 一个状态标志、一行状态检查、一个先后顺序、一次参数调整。复杂性摊开看，就是这些小东西的叠加。
 
-## 8. 再看这三个操作
+## 11. 再看这三个操作
 
 回到这一路音乐，把三个操作放在一起说。
 
@@ -151,7 +185,42 @@
 - https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_signal_process_thread.cpp#L83
 - https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/node/src/hpae_gain_node.cpp#L42
 
-### P7 三个保证，落在代码的哪里？
+### P7 一次暂停，从头到尾
+
+演示顺序：初始显示角色与生命线；第一次点击走完请求到淡出；第二次点击走完回调、收尾与状态回调。
+
+范围：时序按源码调用关系简化：上层调用到渲染管理器的中间环节合并，线程执行与处理链的帧级细节合并；不表示实测时延。
+
+依据：
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1110
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1755
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/node/src/hpae_gain_node.cpp#L232
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1777
+
+### P8 恢复抢先一步，时序会怎样？
+
+演示顺序：初始显示队列里的旧收尾；第一次点击恢复请求入队并执行；第二次点击旧收尾执行检查并返回。
+
+范围：一种请求交错；不表示每次快速点击都能触发。时序按源码调用关系简化。
+
+依据：
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L919
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1755
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1777
+
+### P9 切到耳机：三方接力
+
+演示顺序：初始显示三方角色；第一次点击旧侧摘除并交接节点；第二次点击目标侧接手、调参接入并更新归属。
+
+范围：普通迁移路径；目标不可用与状态变化走其他分支。时序按源码调用关系简化。
+
+依据：
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_manager.cpp#L1065
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L872
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_manager.cpp#L1181
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L114
+
+### P10 三个保证，落在代码的哪里？
 
 演示顺序：第一次点击显示暂停与恢复的落点；第二次点击显示淡入时机与切耳机的落点。
 
@@ -164,7 +233,7 @@
 - https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1777
 - https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L114
 
-### P8 再看这三个操作
+### P11 再看这三个操作
 
 演示顺序：先回到同一路音乐；第一次点击回顾三处具体动作；第二次点击收出五样约束。
 
