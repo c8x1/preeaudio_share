@@ -1,0 +1,86 @@
+{
+  "n": 5,
+  "title": "旧新两种工作交接：谁在等待谁？",
+  "takeaway": "控制线程不能任意拆正在处理的图，需要进入对应执行上下文",
+  "outcome": "能区分PA的mainloop保护、同步send握手和HPAE的普通请求发布，不混淆原子与全部执行。",
+  "elements": [
+    [
+      "table",
+      54,
+      215,
+      1170,
+      370,
+      [
+        [
+          "观察同一问题",
+          "5.1 PA 控制路径",
+          "当前 HPAE 普通路径"
+        ],
+        [
+          "框架怎样交接",
+          "PaLockGuard(mainloop)\npa_stream_cork提交命令",
+          "保存sessionId的闭包\nSendRequest发布"
+        ],
+        [
+          "谁改变执行状态",
+          "协议 → PA控制上下文\nsend(SET_STATE)到sink I/O",
+          "设备队列 → HandleMsg\n消费闭包后才Process"
+        ],
+        [
+          "谁等待谁",
+          "send等待I/O处理\nACK后框架操作回调",
+          "发布不等待业务完成\n消费侧闭包逐项执行"
+        ],
+        [
+          "原子与锁的层次",
+          "多写端包装有mutex\nasyncq槽位有原子操作",
+          "常规请求链表用CAS\nNotify / 扩容仍有锁"
+        ]
+      ],
+      [
+        220,
+        475,
+        475
+      ],
+      21
+    ],
+    [
+      "text",
+      54,
+      612,
+      1170,
+      42,
+      "比较同步边界与完成语义：发布更轻，不会让音效、接图或设备准备瞬间完成",
+      24,
+      "navy",
+      true,
+      "left"
+    ]
+  ],
+  "script": "上一段，我们沿着音频数据走到了设备。现在音乐还在播放，用户按下暂停。这个动作看似只是把一个状态改成 PAUSED，但设备处理线程可能正在遍历节点、计算增益、向设备提交数据。假如调用暂停的线程立即把输入连接拆掉，处理线程手里的通路就可能在遍历中改变。我们需要回答两个问题：谁有权修改运行中的通路；轮到它修改时，这条请求是否还符合当前情况。\n\n先看旧方案怎样协调。5.1 框架调用 libpulse 的 Start 时，先用 PaLockGuard 获取 threaded mainloop 的锁，再检查流是否 READY，调用 pa_stream_cork 解除暂停。这里的锁保护调用者进入 libpulse 的访问边界。函数返回以后，命令还要经过协议处理；PA 控制上下文再通过 asyncmsgq_send，把状态修改同步交给 sink I/O 上下文，等处理完成后继续，最后返回协议 ACK，触发框架的回调。它已经把不同线程的职责分开，也有明确的握手。\n\n因此，旧方案的同步成本需要按层看。asyncmsgq 的多写端包装会获取写端 mutex；send 还会等待信号量，直到消费端报告完成。post 则发布后返回，不等待业务处理。再向下看，asyncq 的槽位本身使用原子指针操作。所以“PA 都用大锁，自研才用原子”解释不了真实变化。要比较的是具体边界：哪些访问要互斥，谁等待谁，哪一刻才能继续。\n\n自研 RendererManager 采用另一种工作交接。Pause、Start 等操作先把待做的事情封装成闭包，也就是一个保存了 sessionId 等信息、以后可以调用的小函数，再通过 SendRequest 发布。普通设备处理路径里，发布后还会 Notify，唤醒处理线程。线程在 Run 中先 HandleMsg，再 Process：先消费控制请求，再进行这一轮音频处理。这样，这条路径的控制修改进入了设备处理上下文。Notify 仍有 mutex 和条件变量；常规请求发布以 CAS 竞争取代这层写端 mutex 互斥，不能把整个执行过程理解成没有等待。",
+  "sources": [
+    "旧Start的mainloop保护与cork L154–182：https://gitcode.com/openharmony/multimedia_audio_framework/blob/c42a228d60b64a90d6b05cf26278a89253e5310b/services/audio_service/server/src/pa_renderer_stream_impl.cpp#L154",
+    "PA post/send/get/done同步与引用 L124–263：https://gitcode.com/openharmony/third_party_pulseaudio/blob/bc6e4fe58232dbad60ae6ee5d83cf46d0fe9b3ca/src/pulsecore/asyncmsgq.c#L124",
+    "PA cork协议处理与ACK L3856–3883：https://gitcode.com/openharmony/third_party_pulseaudio/blob/bc6e4fe58232dbad60ae6ee5d83cf46d0fe9b3ca/src/pulsecore/protocol-native.c#L3856",
+    "PA SET_STATE同步I/O握手 L702–732：https://gitcode.com/openharmony/third_party_pulseaudio/blob/bc6e4fe58232dbad60ae6ee5d83cf46d0fe9b3ca/src/pulsecore/sink-input.c#L702",
+    "设备线程Run与Notify L76–125：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_signal_process_thread.cpp#L76",
+    "取节点、发布与原子摘批 L57–89：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L57"
+  ],
+  "question": "PA send返回和HPAE普通请求发布返回，保证的是同一件事吗？",
+  "answer": "不是。send等待对应I/O处理；普通发布只是交接请求，后续闭包仍要被消费并执行。",
+  "condition": "比较选定的状态控制路径；PA也有异步post与底层原子槽位，HPAE不等于全链无锁",
+  "minutes": 3,
+  "chapter": "故事二 · 控制交接",
+  "prev": "声音处理还在执行，控制请求首先需要安全交接。",
+  "next": "进入请求链内部：两个人同时发布，为什么CAS失败后还必须重写next？",
+  "cue": "",
+  "sourceKeys": [
+    "oldstart",
+    "paqueue",
+    "pacork",
+    "paset",
+    "run",
+    "qpush"
+  ],
+  "version": "three-stories"
+}

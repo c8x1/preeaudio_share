@@ -1,0 +1,34 @@
+取节点、发布与原子摘批 L57–89：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L57
+57: void HpaeNoLockQueue::PushRequest(Request &&request)
+58: {
+59:     uint64_t freeRequestIndex = GetRequestNode(&freeRequestHeadIndex_);
+60:     if (GetRequestIndex(freeRequestIndex) == INVALID_REQUEST_ID) {
+61:         if (TryExpandQueue(true)) {
+62:             freeRequestIndex = GetRequestNode(&freeRequestHeadIndex_);
+63:         }
+64:         if (GetRequestIndex(freeRequestIndex) == INVALID_REQUEST_ID) {
+65:             HpaeMessageQueueMonitor::ReportMessageQueueException(HPAE_NO_LOCK_QUEUE_TYPE, __func__,
+66:                 "reached Queue Capacity");
+67:             AUDIO_WARNING_LOG("reached Queue Capacity: drop this request");
+68:             return;
+69:         }
+70:     }
+71:     RequestNode *requestNode = GetRequestNodePtr(freeRequestIndex);
+72:     CHECK_AND_RETURN_LOG(requestNode != nullptr, "requestNode is nullptr");
+73:     requestNode->request = std::move(request);
+74:     PushRequestNode(&requestHeadIndex_, freeRequestIndex);
+75:     if (usedRequestCount_.fetch_add(1) + 1 >= GetExpandThreshold(requestCount_.load())) {
+76:         TryExpandQueue();
+77:     }
+78: }
+79: 
+80: void HpaeNoLockQueue::HandleRequests()
+81: {
+82:     uint64_t oldRequestFlag;
+83:     uint64_t requestHeadindex;
+84:     do {
+85:         requestHeadindex = requestHeadIndex_.load();
+86:         oldRequestFlag = (GetRequestFlag(requestHeadindex) << SHIFT_32_OFFSET) + INVALID_REQUEST_ID;
+87:     } while (!std::atomic_compare_exchange_strong(&requestHeadIndex_, &requestHeadindex, oldRequestFlag));
+88:     ProcessRequests(requestHeadindex, true);
+89: }

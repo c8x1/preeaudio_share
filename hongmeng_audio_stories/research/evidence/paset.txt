@@ -1,0 +1,32 @@
+PA SET_STATE同步I/O握手 L702–732：https://gitcode.com/openharmony/third_party_pulseaudio/blob/bc6e4fe58232dbad60ae6ee5d83cf46d0fe9b3ca/src/pulsecore/sink-input.c#L702
+702: static void sink_input_set_state(pa_sink_input *i, pa_sink_input_state_t state) {
+703:     pa_sink_input *ssync;
+704:     pa_assert(i);
+705:     pa_assert_ctl_context();
+706: 
+707:     if (i->state == state)
+708:         return;
+709: 
+710:     if (i->sink) {
+711:         if (i->state == PA_SINK_INPUT_CORKED && state == PA_SINK_INPUT_RUNNING && pa_sink_used_by(i->sink) == 0 &&
+712:             !pa_sample_spec_equal(&i->sample_spec, &i->sink->sample_spec)) {
+713:             /* We were uncorked and the sink was not playing anything -- let's try
+714:              * to update the sample format and rate to avoid resampling */
+715:             pa_sink_reconfigure(i->sink, &i->sample_spec, pa_sink_input_is_passthrough(i));
+716:         }
+717: 
+718:         pa_assert_se(pa_asyncmsgq_send(i->sink->asyncmsgq, PA_MSGOBJECT(i), PA_SINK_INPUT_MESSAGE_SET_STATE, PA_UINT_TO_PTR(state), 0, NULL) == 0);
+719:     } else {
+720:         /* If the sink is not valid, pa_sink_input_set_state_within_thread() must be called directly */
+721: 
+722:         pa_sink_input_set_state_within_thread(i, state);
+723: 
+724:         for (ssync = i->thread_info.sync_prev; ssync; ssync = ssync->thread_info.sync_prev)
+725:             pa_sink_input_set_state_within_thread(ssync, state);
+726: 
+727:         for (ssync = i->thread_info.sync_next; ssync; ssync = ssync->thread_info.sync_next)
+728:             pa_sink_input_set_state_within_thread(ssync, state);
+729:     }
+730: 
+731:     update_n_corked(i, state);
+732:     i->state = state;

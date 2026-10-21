@@ -1,0 +1,29 @@
+PA cork协议处理与ACK L3856–3883：https://gitcode.com/openharmony/third_party_pulseaudio/blob/bc6e4fe58232dbad60ae6ee5d83cf46d0fe9b3ca/src/pulsecore/protocol-native.c#L3856
+3856: static void command_cork_playback_stream(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata) {
+3857:     pa_native_connection *c = PA_NATIVE_CONNECTION(userdata);
+3858:     uint32_t idx;
+3859:     bool b;
+3860:     playback_stream *s;
+3861: 
+3862:     pa_native_connection_assert_ref(c);
+3863:     pa_assert(t);
+3864: 
+3865:     if (pa_tagstruct_getu32(t, &idx) < 0 ||
+3866:         pa_tagstruct_get_boolean(t, &b) < 0 ||
+3867:         !pa_tagstruct_eof(t)) {
+3868:         protocol_error(c);
+3869:         return;
+3870:     }
+3871: 
+3872:     CHECK_VALIDITY(c->pstream, c->authorized, tag, PA_ERR_ACCESS);
+3873:     CHECK_VALIDITY(c->pstream, idx != PA_INVALID_INDEX, tag, PA_ERR_INVALID);
+3874:     s = pa_idxset_get_by_index(c->output_streams, idx);
+3875:     CHECK_VALIDITY(c->pstream, s, tag, PA_ERR_NOENTITY);
+3876:     CHECK_VALIDITY(c->pstream, playback_stream_isinstance(s), tag, PA_ERR_NOENTITY);
+3877: 
+3878:     pa_sink_input_cork(s->sink_input, b);
+3879: 
+3880:     if (b)
+3881:         s->is_underrun = true;
+3882: 
+3883:     pa_pstream_send_simple_ack(c->pstream, tag);
