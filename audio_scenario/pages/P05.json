@@ -280,15 +280,15 @@
   "footer": "三幅为阶段示意，不是实测时间线。",
   "minutes": 2,
   "objective": "切到耳机，哪些东西变了？",
-  "script": "第三个动作切耳机，看起来最像“拔了插过去”，实际最麻烦。设备策略已经选定耳机，我们只看引擎怎么执行。\n\n先说朴素做法：把这路音乐停掉，在耳机侧重开。能响，但丢的不只是一根连接：缓冲里的数据、当前的播放状态，全部重来，这路音乐的连续性断了。所以引擎的做法是交接：旧设备侧摘除连接，但握着同一个输入节点交出去。音乐 A 还是那个音乐 A。\n\n目标侧接手之后还有两件事。一是改参数：设备信息改成耳机，处理粒度按目标的采样率和帧长调整，不同设备一轮吃的数据量不一样，不调，数据就和设备对不上拍。二是接链：目标侧处理簇就绪、条件满足，把正在播放的会话接入耳机侧处理链，归属随之更新。\n\n摘旧连接、调参数、接新链，三个阶段，一个都不能省。",
+  "script": "第三个动作切耳机，看起来最像“拔了插过去”，实际最麻烦。设备策略已经选定耳机，我们只看引擎怎么执行。\n\n先说朴素做法：把这路音乐停掉，在耳机侧重开。能响，但丢的不只是一根连接：缓冲里的数据、当前的播放状态，全部重来，这路音乐的连续性断了。所以引擎的做法是交接：旧设备侧摘除连接，但握着同一个输入节点交出去。音乐 A 还是那个音乐 A。\n\n目标侧接手之后还有两件事。一是改参数：设备信息改成耳机，处理粒度按目标的采样率和帧长调整，不同设备一轮吃的数据量不一样，不调，数据就和设备对不上拍。二是接链：目标侧处理簇就绪、条件满足，把正在播放的会话接入耳机侧处理链，归属随之更新。\n\n摘旧连接、调参数、接新链，三个阶段，一个都不能省。至于这些动作由谁、在哪条线程上执行——下一页见。",
   "next": "",
   "boundary": "普通迁移路径示意；交接中不承诺零间隙，接入成功也不等于声学输出已稳定。目标不可用和状态变化会走其他分支。",
   "cue": "先看切换前；第一次点击看交接、参数调整与朴素做法的代价；第二次点击看目标连接与归属变化。",
   "pacing": "先看初始图，再按鼠标逐步揭示。每次点击后沿编号指图解释。",
   "sources": [
-    "https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L872",
-    "https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L114",
-    "https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_manager.cpp#L1181"
+    "https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L872",
+    "https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L114",
+    "https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_manager.cpp#L1181"
   ],
   "from": "音乐 A 始终表示同一路音乐播放会话"
 }

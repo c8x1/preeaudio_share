@@ -1,6 +1,6 @@
 # 一首歌，三个操作 · 讲稿
 
-六页主讲，按点击顺序揭示。正文为口播语言；演示顺序、范围与源码依据见文末备讲附录。时长需以实际试讲为准。
+八页主讲，按点击顺序揭示。正文为口播语言；演示顺序、范围与源码依据见文末备讲附录。时长需以实际试讲为准。
 
 ## 1. 一首歌，三个操作
 
@@ -8,7 +8,7 @@
 
 现在把最直接的实现写出来。暂停，就是把数据流立即截断；恢复，就是原样接回；切耳机，就是从扬声器这边拔下来、插到耳机那边。真这么做会听到什么？暂停是一声“啪”，波形在半幅上被切断；恢复是一声“bang”，等着的数据按全音量冲出来；切耳机，歌断一拍。
 
-真实引擎这三步一步都不敢做。接下来三页，把这三个朴素做法逐个推翻，看引擎实际做了什么。
+真实引擎这三步一步都不敢做。接下来，把这三个朴素做法逐个推翻，先看引擎做了什么，再看它把保证写在了哪里。
 
 ## 2. 暂停时，先淡出，再断开
 
@@ -42,9 +42,35 @@
 
 目标侧接手之后还有两件事。一是改参数：设备信息改成耳机，处理粒度按目标的采样率和帧长调整，不同设备一轮吃的数据量不一样，不调，数据就和设备对不上拍。二是接链：目标侧处理簇就绪、条件满足，把正在播放的会话接入耳机侧处理链，归属随之更新。
 
-摘旧连接、调参数、接新链，三个阶段，一个都不能省。
+摘旧连接、调参数、接新链，三个阶段，一个都不能省。至于这些动作由谁、在哪条线程上执行——下一页见。
 
-## 6. 再看这三个操作
+## 6. 这些请求，谁来执行？
+
+前四页反复出现两个词：“排队”和“等待执行”。现在看它们的物理载体。
+
+每个控制动作——暂停、恢复、切设备，连淡出完成后的收尾——都被打包成一个小任务，丢进同一个队列。执行它们的是一条专用线程：被唤醒后，先把队列排空，把该办的控制动作办完；然后跑一轮音频处理。办完再睡，等下一次唤醒。
+
+这个安排有个直接好处：改处理图的人，就是跑数据的人。同一条线程串行，队列不需要锁，图变更不会跟数据处理撞车。
+
+还有一件事值得看清楚：淡出完成不是靠定时器猜的。处理链在真实数据上一帧帧把增益降下来，降到零的那一刻，就地发回一个“淡出完成”。这个回调本身也是一个请求，排到队尾等执行。前面说“声音没了”和“线拆了”是两个时刻，中间隔的就是这一趟排队。
+
+量级也有数：短淡出按 5 毫秒设计，默认淡出在一轮数据之内完成。都是毫秒级的事，但一步都省不掉。
+
+## 7. 三个保证，落在代码的哪里？
+
+把三个保证落到代码上看，每个都不大。
+
+暂停：渐变不靠外部定时器，挂在增益节点的状态机上，处理链每跑一轮就顺便执行一次，在真实数据上把增益从一降到零。做完，才回调收尾。
+
+恢复：恢复请求执行的第一步，就是把会话状态改成“运行中”，之后才接输入、挂淡入、启动音效。旧收尾执行时的第一行就是检查这个状态：已在运行，直接返回，不碰音效不碰输入。一次险情，一行检查。
+
+淡入时机：接通之后立刻挂淡入，然后才启动会话音效。代码注释写得直白：音效启动要花时间，预缓冲的数据会在“接通到挂淡入”的窗口里按全音量漏出去。先挂淡入，窗口就封住了。
+
+切耳机：输入节点带着自己的状态交接过去；目标侧拿到节点，先把设备信息改成自己，按自己的帧长和采样率调整处理粒度，最后只有“正在运行”的会话才接进新链。
+
+一个状态标志、一行状态检查、一个先后顺序、一次参数调整。复杂性摊开看，就是这些小东西的叠加。
+
+## 8. 再看这三个操作
 
 回到这一路音乐，把三个操作放在一起说。
 
@@ -52,9 +78,9 @@
 
 还有一条底线压在所有这些上面：耳朵什么都不能听见。不能有爆音，不能有全音量冲出来的那一声，不能断拍，不能状态错乱。
 
-时间、队列、状态、设备差异，再加耳朵，五样都得交代。三个操作背后那些复杂性，就是这五样换来的代价。
+时间、队列、状态、设备差异，再加耳朵，五样都得交代。这一部分看到的，就是 HPAE 交的答卷：一条线程、一个队列，和几个落在具体位置的小保证。
 
-五样都交代完，下一个问题自然浮出来：这么多事同时发生，线程、队列、缓冲该怎样组织？这正是下一部分比较 PA 和 HPAE 要回答的。
+那么换一个引擎，同样的三个操作会是什么样？PA 是怎么组织这些事情的，跟这套做法差别在哪、各自换来什么？这就是下一部分的内容。
 
 # 备讲附录
 
@@ -67,9 +93,9 @@
 范围：处理链为简化示意；“会听到”为示意性描述，未做设备实测。
 
 依据：
-- https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L919
-- https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1110
-- https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L872
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L919
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1110
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L872
 
 ### P2 暂停时，先淡出，再断开
 
@@ -78,9 +104,10 @@
 范围：正常淡出路径；波形与时间均为示意，不代表设备实测。若缺少增益节点、设备未运行或处于相应旁路条件，实现也允许直接完成，本页专讲正常淡出路径。
 
 依据：
-- https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1110
-- https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1777
-- https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1868
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1110
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1777
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1868
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/node/src/hpae_gain_node.cpp#L253
 
 ### P3 已经恢复播放，旧的暂停还会生效吗？
 
@@ -89,8 +116,8 @@
 范围：一种请求交错；不表示每次快速点击都能触发。这里只讨论恢复后尚未再次暂停的情况；描述的是引擎执行顺序，不把界面点击等同于可任意并发的客户端调用。
 
 依据：
-- https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L919
-- https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1777
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L919
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1777
 
 ### P4 淡入为什么要先于音效启动？
 
@@ -99,7 +126,8 @@
 范围：上行为假设的错误顺序，下行为实际顺序；增益曲线仅示意，不表达淡入时长。
 
 依据：
-- https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L919
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L919
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/node/src/hpae_gain_node.cpp#L284
 
 ### P5 切到耳机，哪些东西变了？
 
@@ -108,17 +136,41 @@
 范围：普通迁移路径示意；交接中不承诺零间隙，接入成功也不等于声学输出已稳定。目标不可用和状态变化会走其他分支。
 
 依据：
-- https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L872
-- https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L114
-- https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_manager.cpp#L1181
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L872
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L114
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_manager.cpp#L1181
 
-### P6 再看这三个操作
+### P6 这些请求，谁来执行？
+
+演示顺序：初始只显示线程循环；第一次点击显示请求队列与流向；第二次点击显示免锁原因、淡出闭环与量级。
+
+范围：队列与线程按引擎结构示意；线程唤醒后先排空请求再跑一轮处理为源码逻辑，未做时延测量。短淡出常数见增益节点源码。
+
+依据：
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1755
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_signal_process_thread.cpp#L83
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/node/src/hpae_gain_node.cpp#L42
+
+### P7 三个保证，落在代码的哪里？
+
+演示顺序：第一次点击显示暂停与恢复的落点；第二次点击显示淡入时机与切耳机的落点。
+
+范围：行为与代码位置对应源码树当前主干；描述的是这一路径的行为，不构成对其他版本或分支的描述。
+
+依据：
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/node/src/hpae_gain_node.cpp#L207
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/node/src/hpae_gain_node.cpp#L232
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L919
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1777
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L114
+
+### P8 再看这三个操作
 
 演示顺序：先回到同一路音乐；第一次点击回顾三处具体动作；第二次点击收出五样约束。
 
 范围：不把上述能力说成 HPAE 独有，也不从结构图推导未测量的时延或功耗幅度。
 
 依据：
-- https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1110
-- https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1777
-- https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L872
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1755
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1110
+- https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L872

@@ -1796,9 +1796,10 @@
   "cue": "先看两种波形与暂停请求；第一次点击揭示淡出、完成排队和断开；第二次点击强调两个时刻。",
   "pacing": "先看初始图，再按鼠标逐步揭示。每次点击后沿编号指图解释。",
   "sources": [
-    "https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1110",
-    "https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1777",
-    "https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1868"
+    "https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1110",
+    "https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1777",
+    "https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1868",
+    "https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/node/src/hpae_gain_node.cpp#L253"
   ],
   "from": "音乐 A 始终表示同一路音乐播放会话"
 }

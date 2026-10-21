@@ -11,7 +11,7 @@ assert hashlib.sha256(ppt.read_bytes()).hexdigest()==meta['sha256']
 ns={'p':'http://schemas.openxmlformats.org/presentationml/2006/main','a':'http://schemas.openxmlformats.org/drawingml/2006/main'}
 checks=[]
 with ZipFile(ppt) as z:
-    for i in range(1,7):
+    for i in range(1,9):
         root=ET.fromstring(z.read(f'ppt/slides/slide{i}.xml'))
         ids={n.get('id') for n in root.findall('.//p:spTree//p:cNvPr',ns)}
         targets=root.findall('.//p:timing//p:spTgt',ns)
@@ -26,7 +26,7 @@ with ZipFile(ppt) as z:
         checks.append({'slide':i,'click_steps':clicks,'animation_shape_targets':len(targets)})
 
 sections=[]
-for i in range(1,7):
+for i in range(1,9):
     page=json.loads((ROOT/f'pages/P{i:02}.json').read_text(encoding='utf8'))
     svg=(ROOT/f'assets/diagrams/P{i:02}.svg').read_text(encoding='utf8')
     # Keep the full diagram editable in PPT; web version reveals the same groups.

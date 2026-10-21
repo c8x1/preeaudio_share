@@ -222,8 +222,8 @@
   "cue": "初始只显示待执行请求及音乐 A；第一次点击执行恢复；第二次点击执行旧的收尾并显示检查结果与不检查的后果。",
   "pacing": "先看初始图，再按鼠标逐步揭示。每次点击后沿编号指图解释。",
   "sources": [
-    "https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L919",
-    "https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1777"
+    "https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L919",
+    "https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1777"
   ],
   "from": "音乐 A 始终表示同一路音乐播放会话"
 }
