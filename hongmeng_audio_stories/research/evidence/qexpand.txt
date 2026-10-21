@@ -1,0 +1,38 @@
+扩容锁与节点分配 L103–139：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L103
+103: bool HpaeNoLockQueue::TryExpandQueue(bool forceExpand)
+104: {
+105:     size_t requestCount = requestCount_.load();
+106:     if (requestCount >= MAX_REQUEST_COUNT) {
+107:         return false;
+108:     }
+109:     if (!forceExpand && usedRequestCount_.load() < GetExpandThreshold(requestCount)) {
+110:         return false;
+111:     }
+112: 
+113:     std::lock_guard<std::mutex> lock(expandMutex_);
+114:     requestCount = requestCount_.load();
+115:     if (requestCount >= MAX_REQUEST_COUNT) {
+116:         return false;
+117:     }
+118:     if (forceExpand && GetRequestIndex(freeRequestHeadIndex_.load()) != INVALID_REQUEST_ID) {
+119:         return true;
+120:     }
+121:     if (!forceExpand && usedRequestCount_.load() < GetExpandThreshold(requestCount)) {
+122:         return false;
+123:     }
+124: 
+125:     size_t newRequestCount = std::min(requestCount + EXPAND_REQUEST_COUNT, MAX_REQUEST_COUNT);
+126:     size_t appendCount = newRequestCount - requestCount;
+127:     size_t requestBlockIndex = requestCount / EXPAND_REQUEST_COUNT;
+128:     CHECK_AND_RETURN_RET_LOG(requestBlockIndex < requestQueue_.size(), false, "requestBlockIndex is invalid");
+129:     requestQueue_[requestBlockIndex] = std::make_unique<RequestNode[]>(appendCount);
+130:     for (size_t i = 0; i < appendCount; ++i) {
+131:         size_t requestIndex = requestCount + i;
+132:         requestQueue_[requestBlockIndex][i].request = nullptr;
+133:         requestQueue_[requestBlockIndex][i].nextRequestIndex = (requestIndex + 1 < newRequestCount) ?
+134:             (requestIndex + 1) : INVALID_REQUEST_ID;
+135:     }
+136:     requestCount_ = newRequestCount;
+137:     PushRequestNodeChain(&freeRequestHeadIndex_, requestCount, newRequestCount - 1);
+138:     AUDIO_INFO_LOG("expand queue from %{public}zu to %{public}zu", requestCount, newRequestCount);
+139:     return true;

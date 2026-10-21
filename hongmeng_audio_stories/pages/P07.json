@@ -1,0 +1,212 @@
+{
+  "n": 7,
+  "title": "节点已经回收，为什么任务还没完成？",
+  "takeaway": "摘批分离新旧链；vector先接管闭包，节点和业务有不同生命周期",
+  "outcome": "能判断C属于下一批，解释节点先回收与闭包后执行、头空与业务完成的区别。",
+  "elements": [
+    [
+      "text",
+      54,
+      204,
+      1170,
+      40,
+      "① 摘批成功：全局头变空；此后 C 才发布到新的全局头",
+      25,
+      "navy",
+      true,
+      "left"
+    ],
+    [
+      "text",
+      54,
+      269,
+      300,
+      34,
+      "全局入口：后续批次",
+      23,
+      "blue",
+      true,
+      "left"
+    ],
+    [
+      "text",
+      440,
+      269,
+      510,
+      34,
+      "消费者持有的旧批次",
+      23,
+      "teal",
+      true,
+      "left"
+    ],
+    [
+      "text",
+      1020,
+      269,
+      200,
+      34,
+      "空闲节点链",
+      23,
+      "gray",
+      true,
+      "left"
+    ],
+    [
+      "node",
+      100,
+      330,
+      175,
+      60,
+      "C → ∅",
+      "blue",
+      25
+    ],
+    [
+      "node",
+      465,
+      330,
+      140,
+      60,
+      "B",
+      "teal",
+      25
+    ],
+    [
+      "node",
+      690,
+      330,
+      140,
+      60,
+      "A",
+      "teal",
+      25
+    ],
+    [
+      "arrow",
+      605,
+      360,
+      690,
+      360,
+      "teal",
+      false
+    ],
+    [
+      "arrow",
+      650,
+      395,
+      650,
+      444,
+      "teal",
+      false
+    ],
+    [
+      "node",
+      440,
+      449,
+      415,
+      65,
+      "② move闭包：vector=[B,A]",
+      "navy",
+      23
+    ],
+    [
+      "arrow",
+      855,
+      481,
+      1035,
+      481,
+      "gray",
+      false
+    ],
+    [
+      "text",
+      875,
+      438,
+      310,
+      34,
+      "节点先回收",
+      22,
+      "gray",
+      false,
+      "left"
+    ],
+    [
+      "node",
+      1035,
+      451,
+      180,
+      62,
+      "节点可复用",
+      "gray",
+      22
+    ],
+    [
+      "arrow",
+      650,
+      514,
+      650,
+      554,
+      "teal",
+      false
+    ],
+    [
+      "text",
+      440,
+      564,
+      750,
+      40,
+      "③ 反向调用闭包：A 再 B；此时业务才执行",
+      25,
+      "teal",
+      true,
+      "left"
+    ],
+    [
+      "text",
+      54,
+      424,
+      295,
+      110,
+      "C 留待后批\n不加入正在遍历\n的私有旧链",
+      24,
+      "blue",
+      false,
+      "left"
+    ],
+    [
+      "text",
+      54,
+      620,
+      1170,
+      34,
+      "入口头空 ≠ 业务完成；1000初始 / 90%扩容检查 / 5000上限，耗尽仍会报告并丢请求",
+      20,
+      "navy",
+      true,
+      "left"
+    ]
+  ],
+  "script": "现在全局头是 B。消费者也执行 CAS，把全局头换为空，同时取得 B→A 这条链。这一步成功之后，链有了两个归属：全局入口接收新工作，摘下的旧链由本次消费者处理。假设 C 此刻才发布成功，它挂在新的全局头上，属于下一批；它不会悄悄接进消费者正在遍历的旧链。如果 C 在摘批之前已经成功发布，它就可能同这一批一起被取走。分界点是成功更新表头的时刻。\n\n旧链按 B、A 排列，是否就先执行 B？实际并没有。消费者沿链遍历，把闭包 move 到临时 vector，得到 [B,A]，随后反向遍历，先调用 A，再调用 B。这样恢复的是这一批成功发布的先后次序。两个调用者在外面何时开始调用 PushRequest，并不能直接决定这个顺序；线程可能在发布之前被抢占。\n\n批次化还有一个直接后果：A 的闭包如果执行很久，B 就要继续等，下一批 C 也不会因为发布很快就自动抢在前面。CAS 让发布者不必围着同一个写端 mutex 轮流进入，但它不会让闭包里的音效启动、节点操作或其他工作瞬间完成。分析控制响应时，既要看发布重试和唤醒，也要看消费者眼前已有多少工作、每个工作执行多久。这正是把同步开销与业务执行开销分开的意义。\n\n这里还有一个容易画错的生命周期：遍历时，闭包先移到 vector，节点就逐个回到空闲链；业务闭包随后才被执行。节点存储可以重新利用，是因为当前批的工作已经由 vector 持有。我们不能把“回收节点”画成“任务完成”。同理，IsFinishProcess 只检查全局请求头是否为空。当消费者刚摘下 A、B，全局头已经为空，但 A、B 可能一个都没执行。判断队列入口为空，不能替代等待业务完成。\n\n常规发布减少了写端锁争用，但它需要处理容量。当前实现初始一千节点，达到百分之九十阈值时尝试扩容，每次增加一千，上限五千。扩容存在 mutex 和动态分配，消费侧临时 vector 也可能 reserve。到达上限又拿不到节点时，会报告异常并丢弃本次请求。控制正确性不能只靠“入队了”三个字；还要知道容量耗尽的行为，以及哪一种回调才代表目标操作完成。",
+  "sources": [
+    "取节点、发布与原子摘批 L57–89：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L57",
+    "节点取出、回收、闭包执行与头空检查 L206–267：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L206",
+    "扩容锁与节点分配 L103–139：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.cpp#L103",
+    "节点结构及1000/90%/5000 L28–42：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/utils/hpae_no_lock_queue.h#L28"
+  ],
+  "question": "C尚未发布、全局头刚变空时，能宣布A/B已经完成吗？",
+  "answer": "不能。A/B可能仅被摘下或移入vector，随后才逐项执行。C发布在摘批之后则归后批。",
+  "condition": "教学条件：C成功发布发生在本批CAS摘取之后；常规节点复用不替代业务完成确认",
+  "minutes": 4,
+  "chapter": "故事二 · 批次与所有权",
+  "prev": "A/B的头插链是B→A，接着看摘批与执行的次序。",
+  "next": "消息已经正确交接，还需要决定执行时这项工作是否仍应生效。",
+  "cue": "",
+  "sourceKeys": [
+    "qpush",
+    "qrun",
+    "qexpand",
+    "qconst"
+  ],
+  "version": "three-stories"
+}
