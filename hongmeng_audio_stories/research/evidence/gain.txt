@@ -1,0 +1,76 @@
+Gain有效/无效输入淡出与回调 L207–281：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_gain_node.cpp#L207
+207: void HpaeGainNode::SetFadeState(IOperation operation)
+208: {
+209:     operation_ = operation;
+210:     // fade in
+211:     if (operation_ == OPERATION_STARTED) {
+212:         if (fadeInState_ == false) {
+213:             fadeInState_ = true;
+214:             fadeProcessedBytes_ = 0;
+215:         } else {
+216:             AUDIO_WARNING_LOG("fadeInState already set");
+217:         }
+218:         fadeOutState_ = FadeOutState::NO_FADEOUT; // reset fadeOutState_
+219:     }
+220: 
+221:     // fade out
+222:     if (operation_ == OPERATION_PAUSED || operation_ == OPERATION_STOPPED) {
+223:         if (fadeOutState_ == FadeOutState::NO_FADEOUT) {
+224:             fadeOutState_ = FadeOutState::DO_FADEOUT;
+225:         } else {
+226:             AUDIO_WARNING_LOG("current fadeout state %{public}d, cannot prepare fadeout", fadeOutState_);
+227:         }
+228:     }
+229:     AUDIO_DEBUG_LOG("fadeInState_[%{public}d], fadeOutState_[%{public}d]", fadeInState_, fadeOutState_);
+230: }
+231: 
+232: void HpaeGainNode::DoFading(HpaePcmBuffer *input)
+233: {
+234:     if (!input->IsValid() && fadeOutState_ == FadeOutState::DO_FADEOUT) {
+235:         AUDIO_WARNING_LOG("after drain, get invalid data, no need to do fade out");
+236:         fadeOutState_ = FadeOutState::DONE_FADEOUT;
+237:         auto statusCallback = GetNodeStatusCallback().lock();
+238:         CHECK_AND_RETURN_LOG(statusCallback != nullptr, "statusCallback is null, cannot callback");
+239:         statusCallback->OnFadeDone(GetSessionId());
+240:         return;
+241:     }
+242:     // do fade out
+243:     if (fadeOutState_ == FadeOutState::DO_FADEOUT) {
+244:         ApplyFadeOut(input, fadeOutState_, false);
+245:         return;
+246:     }
+247:     // do fade in
+248:     if (fadeInState_) {
+249:         ApplyFadeIn(input, fadeInState_, fadeProcessedBytes_, totalFadeBytes_);
+250:     }
+251: }
+252: 
+253: void HpaeGainNode::ApplyFadeOut(HpaePcmBuffer *input, FadeOutState &fadeOutState, bool isCollFade)
+254: {
+255: #ifndef CONFIG_FACTORY_VERSION
+256:     AudioRawFormat rawFormat;
+257:     rawFormat.format = SAMPLE_F32LE;
+258:     rawFormat.channels = GetChannelCount();
+259:     uint32_t byteLength = 0;
+260:     uint8_t *data = (uint8_t *)input->GetPcmDataBuffer();
+261:     GetFadeLength(byteLength, input);
+262:     // SHORT_FADE derives byteLength from sample rate (5ms of data) without knowing the
+263:     // real buffer geometry; clamp to actual data size to avoid out-of-bounds access on
+264:     // spans shorter than 5ms (e.g. ultra-fast sinks).
+265:     byteLength = std::min(byteLength, static_cast<uint32_t>(input->DataSize()));
+266:     int32_t bufferAvg = GetSimpleBufferAvg(data, byteLength);
+267:     auto ret = ProcessVol(data, byteLength, rawFormat, FADE_HIGH, FADE_LOW);
+268:     AUDIO_INFO_LOG("[%{public}d]: fade out started! buffer avg: %{public}d", GetSessionId(), bufferAvg);
+269: #else
+270:     auto ret = SUCCESS;
+271:     AUDIO_INFO_LOG("fade out done, session %{public}d callback to update status", GetSessionId());
+272: #endif
+273:     fadeOutState = FadeOutState::DONE_FADEOUT;
+274:     auto statusCallback = GetNodeStatusCallback().lock();
+275:     CHECK_AND_RETURN_LOG(statusCallback != nullptr, "statusCallback is null, cannot callback");
+276:     if (isCollFade) {
+277:         statusCallback->OnCollborationFadeDone(GetSessionId());
+278:     } else {
+279:         statusCallback->OnFadeDone(GetSessionId());
+280:     }
+281:     CHECK_AND_RETURN_LOG(ret == SUCCESS, "do fade out fail");

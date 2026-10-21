@@ -1,0 +1,33 @@
+Pause提交与直接断连分支 L1110–1141：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1110
+1110: int32_t HpaeRendererManager::Pause(uint32_t sessionId, bool isStandby)
+1111: {
+1112:     auto request = [this, sessionId, isStandby]() {
+1113:         Trace trace("[" + std::to_string(sessionId) + "]HpaeRendererManager::Pause");
+1114:         AUDIO_INFO_LOG("Pause sessionId %{public}u deviceName %{public}s,isStandb:%{public}d",
+1115:             sessionId, GetEncryptStr(sinkInfo_.deviceName).c_str(), isStandby);
+1116:         CHECK_AND_RETURN_LOG(SafeGetMap(sinkInputNodeMap_, sessionId),
+1117:             "Pause not find sessionId %{public}u", sessionId);
+1118:         // SE close-crossfade waiting on its callback: finalize now, the chain is about to stop
+1119:         // being pulled (fade/teardown); the close cannot be guaranteed to complete before then.
+1120:         FinalizePendingSessionEffectClose(sessionId);
+1121:         HpaeProcessorType sceneType = GetConnectedProcessorType(sessionId);
+1122:         if (!SetSessionFade(sessionId, OPERATION_PAUSED, isStandby)) {
+1123:             if (HasSessionEffect(sessionId)) {
+1124:                 sceneClusterMap_[sceneType]->SessionEffectPause(sessionId);
+1125:             }
+1126:             DisConnectInputSession(sessionId);
+1127:         }
+1128:         UpdateClusterStreamInfo(sceneType);
+1129:         isNeedInitEffectBufferFlagMap_[sessionId] = false;
+1130:         NotifyStreamChangeToSink(STREAM_CHANGE_TYPE_STATE_CHANGE, sessionId, RENDERER_PAUSED);
+1131: #ifdef MULTI_BUS_ENABLE
+1132:         UpdateBusStatusIfNoRunningStream(sessionId);
+1133: #endif
+1134:         StopInterphoneSinkIfNeeded();
+1135:     };
+1136:     SendRequest(request, __func__);
+1137:     return SUCCESS;
+1138: }
+1139: 
+1140: void HpaeRendererManager::StopInterphoneSinkIfNeeded()
+1141: {

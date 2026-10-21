@@ -1,0 +1,151 @@
+{
+  "n": 8,
+  "title": "Pause 已开始，为什么先不拆连接？",
+  "takeaway": "中间态保留处理机会；有样本、无效输入和直接完成是三条条件分支",
+  "outcome": "能沿有效/无效输入分支走到OnFadeDone，解释PAUSING与后续断图、旁路直接完成的差别。",
+  "elements": [
+    [
+      "text",
+      54,
+      205,
+      1170,
+      36,
+      "普通分支前提：输入与Gain存在、设备运行、非standby；Pause已被消费",
+      23,
+      "navy",
+      true,
+      "left"
+    ],
+    [
+      "table",
+      54,
+      259,
+      1170,
+      186,
+      [
+        [
+          "PAUSING后的Process输入",
+          "Gain执行的工作",
+          "完成事件"
+        ],
+        [
+          "有效样本",
+          "ApplyFadeOut：处理样本增益\n再置DONE_FADEOUT",
+          "调用OnFadeDone"
+        ],
+        [
+          "无效输入，且DO_FADEOUT",
+          "不做样本渐变\n直接置DONE_FADEOUT",
+          "仍调用OnFadeDone"
+        ]
+      ],
+      [
+        360,
+        510,
+        300
+      ],
+      21
+    ],
+    [
+      "node",
+      54,
+      488,
+      245,
+      69,
+      "PAUSING\n暂时保留连接",
+      "blue",
+      22
+    ],
+    [
+      "arrow",
+      299,
+      522,
+      352,
+      522,
+      "blue",
+      false
+    ],
+    [
+      "node",
+      352,
+      488,
+      245,
+      69,
+      "OnFadeDone\n发布收尾闭包F",
+      "teal",
+      22
+    ],
+    [
+      "arrow",
+      597,
+      522,
+      650,
+      522,
+      "blue",
+      false
+    ],
+    [
+      "node",
+      650,
+      488,
+      245,
+      69,
+      "后续HandleMsg\n执行F并检查状态",
+      "blue",
+      22
+    ],
+    [
+      "arrow",
+      895,
+      522,
+      948,
+      522,
+      "blue",
+      false
+    ],
+    [
+      "node",
+      948,
+      488,
+      276,
+      69,
+      "仍PAUSING：断开输入\nPAUSED + 回调",
+      "teal",
+      22
+    ],
+    [
+      "text",
+      54,
+      594,
+      1170,
+      62,
+      "另一条旁路：无Gain / 设备未运行 / standby / 已暂停或停止\nSetSessionFade直接写终态并回调；返回Pause后断图，不等Gain事件",
+      22,
+      "gray",
+      false,
+      "left"
+    ]
+  ],
+  "script": "再回到暂停。选一条确实需要淡出的正常路径：会话输入和 Gain 节点存在，设备在运行，也不是 standby。Pause 闭包被执行后，让 Gain 开始淡出，并把输入和会话状态置为 PAUSING。连接暂时保留，后续音频处理才能完成增益渐变。Gain 完成淡出时调用 OnFadeDone；OnFadeDone 再提交一个闭包，等待设备处理侧收尾。正常情况下，它暂停相关音效、断开输入、写入 PAUSED，并触发回调。PAUSING 的价值就在这里：表达“暂停已经开始，拆图尚未完成”。\n\n补充区分Gain的两个实际分支：DoFading收到无效输入且处于DO_FADEOUT时，直接写DONE_FADEOUT并调用OnFadeDone，不执行样本渐变。有效输入才进入ApplyFadeOut；未定义CONFIG_FACTORY_VERSION时处理样本增益，随后写DONE并回调，工厂构建跳过实际样本渐变。它们与SetSessionFade因无Gain、设备未运行、standby或已处于PAUSED/STOPPED而直接完成的旁路是不同条件。本图正常收尾假设F执行时输入仍存在且仍为PAUSING；恢复引入的迟到事件在下一页展开。\n\n若执行时仍是 PAUSING，正常收尾继续；若是 STOPPING，则收尾到 STOPPED。若没有 Gain、设备未运行或属于 standby 等情况，Pause 也存在直接完成的分支，不需要等待淡出。这是一组带条件的状态转换，而不是无论什么情况都强制经过三步。",
+  "sources": [
+    "Pause提交与直接断连分支 L1110–1141：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1110",
+    "SetSessionFade条件与中间态 L1861–1904：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1861",
+    "Gain有效/无效输入淡出与回调 L207–281：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_gain_node.cpp#L207",
+    "FadeDone入队与执行时守卫 L1777–1804：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1777"
+  ],
+  "question": "Gain收到无效输入时，是否必须一直等到有效样本回来才完成Pause？",
+  "answer": "不是。DO_FADEOUT且输入无效时直接置DONE并回调；它不同于无Gain或standby等SetSessionFade直接完成旁路。",
+  "condition": "普通非INTERPHONE、非工厂构建且回调有效；F执行时输入仍在且仍PAUSING，恢复竞态见下一页",
+  "minutes": 3,
+  "chapter": "故事二 · Pause状态与完成条件",
+  "prev": "消息已经交接，下一步要让图修改与正在执行的处理对齐。",
+  "next": "如果F排队时用户已恢复播放，旧完成事件还能拆图吗？",
+  "cue": "",
+  "sourceKeys": [
+    "pause",
+    "fade",
+    "gain",
+    "fadedone"
+  ],
+  "version": "three-stories"
+}
