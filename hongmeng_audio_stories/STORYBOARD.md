@@ -11,8 +11,8 @@
 | 05 | 相同控制问题的旧新边界：PA guard/libpulse→协议→send等待I/O→ACK；HPAE闭包发布→普通设备线程消费。清楚标post与send，点出业务执行仍串行 | 能指出谁等谁、什么返回只表示交接；不会把无锁发布当无等待执行 | 故事二0–3段，管理/设备补充在01 |
 | 06 | A/B两生产者竞争表头，按6步展示同读空、A成功、B失败、B重读A并重写next、B成功。右下给不重写next时B→空截断A的反例 | CAS失败不等于请求失败；只重试CAS不重写next会破坏已有链 | 故事二5–8段 |
 | 07 | 消费者摘B→A后全局新C与私有旧批分离；vector=[B,A]、节点已回收、反向执行A/B。旁列1000/90%/5000慢路径 | 全局头空和节点回收都不能证明业务已完成；C属于哪批由发布/摘批时刻决定 | 故事二9–13段 |
-| 08 | 普通Pause的两个进度：控制进入PAUSING，连接保留供Gain处理，FadeDone闭包再入队执行后拆图/终态。代码短摘录展示SetFade/DoFading；无Gain/standby旁路另标 | 立即断开会让淡出处理失去该输入连接；中间态表达控制与数据处理尚未同时完成 | 故事二14/19段；Gain实际DoFading分支的源码补充 |
-| 09 | 跨N与N+1循环的竞态泳道：N轮Pause已消费→Process中管理线程先发布Start→Gain后发布F→全局F→Start→下轮反向Start/F→F消费时RUNNING退出。去掉guard的结果在讲稿揭示 | 保护必须在闭包真正执行时检查；同批Pause+Start可能根本不产生旧F，不能乱画交错 | 故事二15–18/20–22段；服务迟到Drain作短类比 |
+| 08 | 普通Pause的两个进度：控制进入PAUSING，连接保留供Gain处理。DoFading分支明确：有效样本ApplyFadeOut后OnFadeDone；无效输入直接DONE并OnFadeDone。之后收尾闭包再入队、消费后断图/终态。SetSessionFade无Gain/standby等直接终态路径在独立旁路，不与无效输入分支混合 | 有效样本分支为何要保留连接；无数据不必虚构仍在执行渐变；三个完成条件不能压成同一步 | 故事二14/19段；Gain实际DoFading分支的源码补充 |
+| 09 | 跨N与N+1循环的竞态泳道：N轮Pause已消费→Process中管理线程先发布Start→Gain后发布F→全局F→Start→下轮反向Start/F→F消费时RUNNING退出。图上明确反事实支路：移除guard则PauseEffect/Disconnect/回写PAUSED，会拆掉刚恢复的通路 | 保护必须在闭包真正执行时检查；同批Pause+Start可能根本不产生旧F，不能乱画交错 | 故事二15–18/20–22段；服务迟到Drain作短类比 |
 | 10 | 真实音乐选择树：zone0默认XML，UserSelect→Pair→Privacy…。前方有效结果即短路；Privacy先过滤，再选合格列表最新。两次反例分别是有效扬声器偏好与被禁用的新耳机 | “最新连接”不是所有路由的最高规则，Router优先级和内部排序是两层规则 | 故事三0–7段 |
 | 11 | device / pipe / sink三个标识的分支算例：目标device不同、pipe同primary、DEFAULT仍可能调用Move、Check通过且sink同则引擎早退；后续route另有条件 | Move方法被调用，不等于输入跨Renderer迁移；不能把同pipe简化成不调用Move | 故事三8–12段 |
 | 12 | 需跨sink的合法子场景：新HPAE旧图拆边/对象回调/目标再入队/span/按RUNNING接图；旧PA同步START_MOVE/FINISH_MOVE等待带与相同sink_input复用。PAUSED反例在状态列显式显示 | 迁移设备归属不应恢复暂停；两方案都复用输入对象，完成边界不同 | 故事三13–21段 |

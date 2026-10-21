@@ -1,0 +1,58 @@
+Client Start等待RUNNING L1398–1454：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/client/src/renderer_in_client_public.cpp#L1398
+1398: bool RendererInClientInner::StartAudioStream(StateChangeCmdType cmdType,
+1399:     AudioStreamDeviceChangeReasonExt reason)
+1400: {
+1401:     SyncRendererAttrFromSpan();
+1402:     mutePlayStartTime_ = 0;
+1403:     Trace trace("RendererInClientInner::StartAudioStream " + std::to_string(sessionId_));
+1404:     std::unique_lock<std::mutex> statusLock(statusMutex_);
+1405:     CHECK_AND_CALL_FUNC_RETURN_RET_LOG(state_ == PREPARED || state_ == STOPPED || state_ == PAUSED, false,
+1406:         SendAudioErrorEventAndProcessOther(static_cast<int32_t>(clientUid_), PLAY_START_ILLEGAL_STATE,
+1407:             "Illegal state", true, state_), "Start failed");
+1408:     ResetNotifyStreamSilentChangeFlag();
+1409:     hasFirstFrameWrited_ = false;
+1410:     CHECK_AND_CALL_FUNC_RETURN_RET_REPORT(ipcStream_ != nullptr, false,
+1411:         SendAudioErrorEventAndProcessOther(static_cast<int32_t>(clientUid_),
+1412:             PLAY_START_NULL_POINTER, "ipcStream is not inited", true, state_),
+1413:         HILOG_COMM_ERROR("[StartAudioStream]ipcStream is not inited!"));
+1414:     int32_t ret = ipcStream_->Start(CheckWriteCb());
+1415:     CHECK_AND_CALL_FUNC_RETURN_RET_REPORT(ret == SUCCESS, false,
+1416:         SendAudioErrorEventAndProcessOther(static_cast<int32_t>(clientUid_),
+1417:             PLAY_START_OPERATION_FAILED, "Start call server failed", true, state_),
+1418:         HILOG_COMM_ERROR("[StartAudioStream]Start call server failed:%{public}u", ret));
+1419:     std::unique_lock<std::mutex> waitLock(callServerMutex_);
+1420:     bool stopWaiting = callServerCV_.wait_for(waitLock, std::chrono::milliseconds(OPERATION_TIMEOUT_IN_MS), [this] {
+1421:         return state_ == RUNNING; // will be false when got notified.
+1422:     });
+1423:     if (!stopWaiting) {
+1424:         SendAudioErrorEventAndProcessOther(static_cast<int32_t>(clientUid_),
+1425:             PLAY_START_TIMEOUT, "Start timeout", true, state_);
+1426:         AUDIO_ERR_LOG("Start failed: timeout");
+1427:         ipcStream_->Stop();
+1428:         return false;
+1429:     }
+1430:     waitLock.unlock();
+1431:     if (loudVolumeSupportMode_ != LOUD_VOLUME_NOT_SUPPORT) {
+1432:         AudioPolicyManager::GetInstance().ReloadLoudVolumeMode(eStreamType_, LOUD_VOLUME_SWITCH_AUTO);
+1433:     }
+1434: 
+1435:     HILOG_COMM_INFO("[StartAudioStream]Start SUCCESS, sessionId: %{public}d, uid: %{public}d",
+1436:         sessionId_, clientUid_);
+1437:     UpdateTracker("RUNNING");
+1438:     FlushBeforeStart();
+1439:     offloadStartReadPos_ = 0;
+1440: 
+1441:     NotifyStopWaiting();
+1442: 
+1443:     RegisterThreadPriorityOnStart(cmdType);
+1444: 
+1445:     statusLock.unlock();
+1446:     // in plan: call HiSysEventWrite
+1447:     int64_t param = -1;
+1448:     StateCmdTypeToParams(param, state_, cmdType);
+1449:     SafeSendCallbackEvent(STATE_CHANGE_EVENT, param);
+1450:     preWriteEndTime_ = 0;
+1451:     return true;
+1452: }
+1453: 
+1454: void RendererInClientInner::FlushBeforeStart()

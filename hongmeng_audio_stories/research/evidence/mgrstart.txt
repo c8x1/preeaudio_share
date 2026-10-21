@@ -1,0 +1,47 @@
+管理队列Start及状态回程 L1830–1875：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_manager.cpp#L1830
+1830: int32_t HpaeManager::Start(HpaeStreamClassType streamClassType, uint32_t sessionId)
+1831: {
+1832:     auto request = [this, streamClassType, sessionId]() {
+1833:         CHECK_AND_RETURN_LOG(ShouldNotSkipProcess(streamClassType, sessionId),
+1834:             "Start session: %{public}u failed, session already released", sessionId);
+1835:         AUDIO_INFO_LOG(
+1836:             "Start sessionId: %{public}u streamClassType:%{public}d", sessionId, streamClassType);
+1837:         if (SetMovingStreamState(streamClassType, sessionId, HPAE_SESSION_RUNNING,
+1838:             HPAE_SESSION_RUNNING, OPERATION_STARTED)) {
+1839:             return;
+1840:         }
+1841:         if (streamClassType == HPAE_STREAM_CLASS_TYPE_PLAY &&
+1842:             rendererIdSinkNameMap_.find(sessionId) != rendererIdSinkNameMap_.end()) {
+1843:             AUDIO_INFO_LOG("renderer Start sessionId: %{public}u deviceName:%{public}s",
+1844:                 sessionId, GetEncryptStr(rendererIdSinkNameMap_[sessionId]).c_str());
+1845:             CHECK_AND_RETURN_LOG(SafeGetMap(rendererManagerMap_, rendererIdSinkNameMap_[sessionId]),
+1846:                 "cannot find device:%{public}s", GetEncryptStr(rendererIdSinkNameMap_[sessionId]).c_str());
+1847:             rendererManagerMap_[rendererIdSinkNameMap_[sessionId]]->Start(sessionId);
+1848:             rendererIdStreamInfoMap_[sessionId].state = HPAE_SESSION_RUNNING;
+1849:             TryBindSessionEffectOnStart(sessionId);
+1850:             UpdateStatus(rendererIdStreamInfoMap_[sessionId].statusCallback, OPERATION_STARTED, sessionId);
+1851:         } else if (streamClassType == HPAE_STREAM_CLASS_TYPE_RECORD &&
+1852:                    capturerIdSourceNameMap_.find(sessionId) != capturerIdSourceNameMap_.end()) {
+1853:             AUDIO_INFO_LOG("capturer Start sessionId: %{public}u deviceName:%{public}s",
+1854:                 sessionId, capturerIdSourceNameMap_[sessionId].c_str());
+1855:             if (INNER_SOURCE_TYPE_SET.count(capturerIdStreamInfoMap_[sessionId].streamInfo.sourceType) != 0) {
+1856:                 CHECK_AND_RETURN_LOG(SafeGetMap(rendererManagerMap_, capturerIdSourceNameMap_[sessionId]),
+1857:                     "cannot find device:%{public}s", capturerIdSourceNameMap_[sessionId].c_str());
+1858:                 rendererManagerMap_[capturerIdSourceNameMap_[sessionId]]->Start(sessionId);
+1859:                 UpdateStatus(capturerIdStreamInfoMap_[sessionId].statusCallback, OPERATION_STARTED, sessionId);
+1860:             } else {
+1861:                 CHECK_AND_RETURN_LOG(SafeGetMap(capturerManagerMap_, capturerIdSourceNameMap_[sessionId]),
+1862:                     "cannot find device:%{public}s", capturerIdSourceNameMap_[sessionId].c_str());
+1863:                 capturerManagerMap_[capturerIdSourceNameMap_[sessionId]]->Start(sessionId);
+1864:                 UpdateStatus(capturerIdStreamInfoMap_[sessionId].statusCallback, OPERATION_STARTED, sessionId);
+1865:             }
+1866:             capturerIdStreamInfoMap_[sessionId].state = HPAE_SESSION_RUNNING;
+1867:         } else {
+1868:             AUDIO_WARNING_LOG("Start can not find sessionId streamClassType  %{public}d, sessionId %{public}u",
+1869:                 streamClassType, sessionId);
+1870:         }
+1871:     };
+1872:     SendRequest(request, __func__);
+1873:     return SUCCESS;
+1874: }
+1875: 

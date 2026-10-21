@@ -1,0 +1,46 @@
+SinkOutput提交与余量搬移 L121–165：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/node/src/hpae_sink_output_node.cpp#L121
+121: void HpaeSinkOutputNode::DoProcess()
+122: {
+123:     Trace trace(processTraceName_);
+124:     if (audioRendererSink_ == nullptr) {
+125:         AUDIO_WARNING_LOG("audioRendererSink_ is nullptr sessionId: %{public}u", GetSessionId());
+126:         return;
+127:     }
+128:     if (GetNodeInfo().routeFlag == AUDIO_OUTPUT_FLAG_INTERPHONE) {
+129:         return;
+130:     }
+131: 
+132:     CHECK_AND_RETURN(ReadDataAndConvertFormat());
+133:     uint64_t writeLen = 0;
+134:     char *renderFrameData = (char *)renderFrameData_.data();
+135: 
+136: #ifdef ENABLE_HOOK_PCM
+137:     HighResolutionTimer timer;
+138:     timer.Start();
+139:     intervalTimer_.Stop();
+140: #endif
+141:     HandleHapticParam(renderFrameTimes_);
+142:     renderFrameTimes_ += FRAME_LEN_20MS;
+143:     auto ret = audioRendererSink_->RenderFrame(*renderFrameData, renderSize_, writeLen);
+144:     if (ret != SUCCESS || writeLen != renderSize_) {
+145:         AUDIO_ERR_LOG("RenderFrame failed");
+146:         if (!IsRemoteDeviceClass(GetDeviceClass())) {
+147:             periodTimer_.Stop();
+148:             uint64_t usedTimeUs = static_cast<uint64_t>(periodTimer_.Elapsed<std::chrono::microseconds>());
+149:             usleep(SLEEP_TIME_IN_US > usedTimeUs ? SLEEP_TIME_IN_US - usedTimeUs : 0);
+150:         }
+151:         collRenderFrameFailedCount_.fetch_add(1);
+152:     } else {
+153:         collRenderFrameFailedCount_.store(0);
+154:     }
+155: 
+156:     CheckAndSetCollDelayForRenderFrameFailed();
+157:     RenderFrameForAuxiliarySink();
+158:     periodTimer_.Start();
+159:     HandleRemoteTiming(); // used to control remote RenderFrame tempo.
+160:     std::move(renderFrameData_.begin() + renderSize_, renderFrameData_.begin() + currentSize_,
+161:         renderFrameData_.begin());
+162:     currentSize_ -= renderSize_;
+163: #ifdef ENABLE_HOOK_PCM
+164:     timer.Stop();
+165:     int64_t elapsed = timer.Elapsed();

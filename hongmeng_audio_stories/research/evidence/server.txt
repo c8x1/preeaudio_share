@@ -1,0 +1,32 @@
+Server Start：校验、策略与连接等待 L1576–1606：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_service/server/src/renderer_in_server.cpp#L1576
+1576:     } else {
+1577:         audioStreamChecker_->MonitorOnAllCallback(AUDIO_STREAM_START, false);
+1578:     }
+1579:     needForceWrite_ = 0;
+1580:     CHECK_AND_RETURN_RET(ValidateStartState() == SUCCESS, ERR_ILLEGAL_STATE);
+1581:     CHECK_AND_RETURN_RET(ValidateAndSetupBufferForStart() == SUCCESS, ERR_OPERATION_FAILED);
+1582: 
+1583:     ret = CoreServiceHandler::GetInstance().UpdateSessionOperation(streamIndex_, SESSION_OPERATION_START,
+1584:         hasNoCallback ? SESSION_OP_MSG_FAST_CHANGE_TO_NORMAL : SESSION_OP_MSG_DEFAULT);
+1585:     CHECK_AND_CALL_FUNC_RETURN_RET_REPORT(ret == SUCCESS, ret,
+1586:         StreamDfxManager::GetInstance().SendAudioErrorEvent(static_cast<int32_t>(processConfig_.appInfo.appUid),
+1587:             PLAY_START_OPERATION_FAILED, "Policy start client failed", false),
+1588:         HILOG_COMM_ERROR("[StartInner]Policy start client failed, reason: %{public}d", ret));
+1589: 
+1590:     if (!(processConfig_.rendererInfo.audioFlag & AUDIO_OUTPUT_FLAG_FAST)) {
+1591:         // Bluetooth connection may take a long time, which may cause the data before and after the connection
+1592:         // are not continuous, resulting in pop sounds. To avoid the problem,
+1593:         // WaitForDataConnection() needs to be called after UpdateSessionOperation(), where device is activated,
+1594:         // and also before stream_->Start(), where the stream is actually started.
+1595:         WaitForDataConnection();
+1596:     }
+1597: 
+1598:     ret = (managerType_ == DIRECT_PLAYBACK || managerType_ == VOIP_PLAYBACK || managerType_ == EAC3_PLAYBACK ||
+1599:         managerType_ == AUDIO_VIVID_3DA_DIRECT_PLAYBACK) ?
+1600:         IStreamManager::GetPlaybackManager(managerType_).StartRender(streamIndex_) : stream_->Start();
+1601:     CHECK_AND_CALL_FUNC_RETURN_RET_REPORT(ret == SUCCESS, ret,
+1602:         StreamDfxManager::GetInstance().SendAudioErrorEvent(static_cast<int32_t>(processConfig_.appInfo.appUid),
+1603:             PLAY_START_OPERATION_FAILED, "Start stream failed", false),
+1604:         HILOG_COMM_ERROR("[StartInner]Start stream failed, reason: %{public}d", ret));
+1605: 
+1606:     UpdateStartTimeInfo();
