@@ -11,11 +11,13 @@
 
 2026-10-21 修订：P3 展示请求排队与执行，P4 对比淡入设置时机，P5 展示设备切换的三个阶段。全篇使用“音乐 A”标记同一路会话，删除重复总结。
 
+2026-10-21 二次修订：装上“表面简单→底层复杂→复杂必要”的叙事脊。P1 立三次点击的表面简单，并预告三种朴素做法会听到的失败声；P2–P4 的失败模式改为耳朵语言，P3 补“若不检查”的后果；P5 补朴素做法（停下重开）的代价；P6 收出时间、队列、状态、设备差异、耳朵五样约束再桥接下一部分。讲稿正文只留口播语言，演示顺序、范围与源码依据移入文末备讲附录；页面脚注只保留图例类短句。
+
 PPTX 含原生点击出现效果，每页 1–2 次点击。HTML 预览也支持逐步揭示；PNG 为全部内容展开状态。机制范围为普通 HPAE 播放路径，条件时序不代表每次用户点击都会复现，未开展设备性能实验。动画结构经过检查，尚未在桌面 PowerPoint 中实际放映验证。
 
 ## 构建
 
-沿用仓库现有的 `@oai/artifact-tool` 构建环境，字体为 Microsoft YaHei。运行时路径见 `hongmeng_audio_design_review/build/README.md`，新环境需调整本机绝对路径并配置模块依赖。
+沿用仓库现有的 `@oai/artifact-tool` 构建环境，字体为 Microsoft YaHei。运行时路径见 `hongmeng_audio_design_review/build/README.md`，新环境需调整本机绝对路径并配置模块依赖。非 Windows 环境可用 `PRESENTATIONS_PYTHON`、`RUNTIME_NODE_MODULES`、`PRESENTATIONS_SKILL_DIR` 三个环境变量覆盖本机 python 可执行、node 模块目录与 presentations 技能目录（默认值仍为原 Windows 路径）；校验回执目录 `.codex-finalizer/` 需事先存在。
 
 在仓库根目录运行：
 
