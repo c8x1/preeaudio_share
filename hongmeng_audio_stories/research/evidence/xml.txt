@@ -1,0 +1,8 @@
+默认媒体Router顺序 L16–22：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/infra/config/file/audio_strategy_router.xml#L16
+16: <audioStrategyRouter version="1.0" xmlns:xi="http://www.w3.org/2001/XInclude">
+17:     <strategy name="MEDIA_RENDER" routers="UserSelectRouter,PairDeviceRouter,PrivacyPriorityRouter,PublicPriorityRouter,StreamFilterRouter,DefaultRouter"/>
+18:     <strategy name="CALL_RENDER"  routers="UserSelectRouter,PrivacyPriorityRouter,CockpitPhoneRouter,StreamFilterRouter,DefaultRouter"/>
+19:     <strategy name="RING_RENDER"  routers="UserSelectRouter,PrivacyPriorityRouter,PublicPriorityRouter,StreamFilterRouter,DefaultRouter"/>
+20:     <strategy name="TONE_RENDER"  routers="UserSelectRouter,PrivacyPriorityRouter,PublicPriorityRouter,StreamFilterRouter,DefaultRouter"/>
+21:     <strategy name="RECORD_CAPTURE" routers="UserSelectRouter,PairDeviceRouter,PrivacyPriorityRouter,PublicPriorityRouter,StreamFilterRouter,DefaultRouter"/>
+22:     <strategy name="CALL_CAPTURE"  routers="UserSelectRouter,PairDeviceRouter,PrivacyPriorityRouter,CockpitPhoneRouter,StreamFilterRouter,DefaultRouter"/>

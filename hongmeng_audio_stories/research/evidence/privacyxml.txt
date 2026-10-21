@@ -1,0 +1,6 @@
+有线及USB候选隐私类别 L19–23：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/infra/config/file/audio_device_privacy.xml#L19
+19:             <device name="Wired Headset" type="DEVICE_TYPE_WIRED_HEADSET" role="output,input" Category="" usage="media,voice,recongnition"/>
+20:             <device name="Wired Headphones" type="DEVICE_TYPE_WIRED_HEADPHONES" role="output" Category="" usage="media,voice"/>
+21:             <device name="Usb Headset Hifi" type="DEVICE_TYPE_USB_HEADSET" role="output,input" Category="" usage="media,voice,recongnition"/>
+22:             <device name="Usb Arm Headset" type="DEVICE_TYPE_USB_ARM_HEADSET" role="output,input" Category="" usage="media,voice,recongnition"/>
+23:             <device name="Bt A2dp" type="DEVICE_TYPE_BLUETOOTH_A2DP" role="output" Category="HEADPHONE,GLASSES" usage="media"/>

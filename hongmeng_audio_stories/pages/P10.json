@@ -1,0 +1,207 @@
+{
+  "n": 10,
+  "title": "新耳机为什么可能获胜，也可能轮不到它？",
+  "takeaway": "Router优先级与Router内部的候选排序，是两层不同规则",
+  "outcome": "能预测有效用户选择与禁用候选的反例，解释首个有效短路、过滤后选最新及zone分支范围。",
+  "elements": [
+    [
+      "text",
+      54,
+      206,
+      1170,
+      36,
+      "本次条件：zone0普通音乐，仓库默认XML，无后续refiner改写；先选有效设备",
+      23,
+      "navy",
+      true,
+      "left"
+    ],
+    [
+      "node",
+      54,
+      264,
+      180,
+      62,
+      "UserSelect",
+      "blue",
+      21
+    ],
+    [
+      "arrow",
+      234,
+      295,
+      252,
+      295,
+      "blue",
+      false
+    ],
+    [
+      "node",
+      252,
+      264,
+      180,
+      62,
+      "PairDevice",
+      "blue",
+      21
+    ],
+    [
+      "arrow",
+      432,
+      295,
+      450,
+      295,
+      "blue",
+      false
+    ],
+    [
+      "node",
+      450,
+      264,
+      180,
+      62,
+      "Privacy",
+      "teal",
+      21
+    ],
+    [
+      "arrow",
+      630,
+      295,
+      648,
+      295,
+      "blue",
+      false
+    ],
+    [
+      "node",
+      648,
+      264,
+      180,
+      62,
+      "Public",
+      "blue",
+      21
+    ],
+    [
+      "arrow",
+      828,
+      295,
+      846,
+      295,
+      "blue",
+      false
+    ],
+    [
+      "node",
+      846,
+      264,
+      180,
+      62,
+      "StreamFilter",
+      "blue",
+      21
+    ],
+    [
+      "arrow",
+      1026,
+      295,
+      1044,
+      295,
+      "blue",
+      false
+    ],
+    [
+      "node",
+      1044,
+      264,
+      180,
+      62,
+      "Default",
+      "blue",
+      21
+    ],
+    [
+      "text",
+      54,
+      344,
+      1170,
+      40,
+      "Router间：第一个有效结果就返回，后面的Router不再参与",
+      25,
+      "blue",
+      true,
+      "left"
+    ],
+    [
+      "text",
+      54,
+      404,
+      1170,
+      40,
+      "Privacy内部：候选 → 过滤禁用 / 异常 / 排除项 → 合格列表中选最新连接",
+      23,
+      "teal",
+      true,
+      "left"
+    ],
+    [
+      "table",
+      54,
+      475,
+      1170,
+      165,
+      [
+        [
+          "改变一个条件",
+          "预测结果"
+        ],
+        [
+          "UserSelect仍返回有效扬声器",
+          "立即返回扬声器；更新的耳机轮不到Privacy来覆盖"
+        ],
+        [
+          "前方无结果，最新Privacy设备被禁用",
+          "先排除它，再从合格候选中选；时间最新不能豁免过滤"
+        ]
+      ],
+      [
+        430,
+        740
+      ],
+      21
+    ]
+  ],
+  "script": "音乐还在播放，我们把输出切到耳机。前面已经知道，音频通路会被控制消息改变。现在先问一个更早的问题：到底谁决定了“去耳机”，引擎是不是看到耳机插入就把所有流搬过去？\n\n如果直接回答“策略选设备，引擎搬节点”，我们仍然没解释什么。因为策略不只看设备有没有连接，引擎也不只看设备名称。我们先选一个可核验的小场景：普通音乐会话，属于zone零，采用仓库中的默认路由配置，没有通话或车机优先规则，也没有后续refiner改写结果。设备已经成功连接，不处于禁用、异常或排除状态。接下来所有选择都在这些前提下推演，不把它当成每个产品的通用规则。\n\n默认配置先把MUSIC映射到媒体输出策略。媒体策略里是一条有顺序的Router链：用户选择、配对设备、隐私优先、公共优先、流过滤、默认。遍历不是让每个Router投票再统计票数，而是前面的Router一旦返回有效设备，就直接返回，不再问后面的Router。\n\n现在假设用户没有有效的显式输出选择，配对路由也没有结果，执行才轮到PrivacyPriority。它从适合媒体输出的隐私设备里取候选，排除不能使用的设备，再从合格列表中选最新连接的一个。默认隐私设备配置包含有线耳机与若干USB耳机类别。因此，当这次新耳机是合格候选中最新连接的设备时，它可以成为音乐的目标。\n\n请先预测一个变化：音乐原来在扬声器上，用户选择Router此刻仍返回一个有效的扬声器；后面插入了更晚连接的耳机，会因为“更新”而覆盖前面的结果吗？在这条配置链里不会。第一个Router已经返回了有效结果，PrivacyPriority没有获得决策机会。“最新连接”是某个Router内部的候选选择规则，不是整个系统对所有偏好的最高规则。\n\n再变一次条件：没有有效用户选择，Privacy里最新的设备却被禁用了。它能因为时间最新而获胜吗？不能，过滤先于时间选择。最新的前提是仍在合格列表里。听到这里，我们已经可以解释两种看似相同的插入动作为什么有不同结果：它们可能进入了不同Router，或者候选在过滤阶段已经不同。\n\n如果前面的Router都没有结果，还会进入Default。这里也先查询媒体默认输出上下文，不是无条件写死扬声器；只有该上下文没有结果时，才使用渲染默认设备。因此“最后回扬声器”也需要给出条件。\n\n还有一条不要混进主图的分支：如果这个会话属于非零zone，预取阶段可以向zone查询设备，得到结果后直接返回。普通zone零的Router链和非零zone选择不是两站连续的流水线。主图先标分支，再走本次场景，听众才知道我们为什么只展开这条策略。",
+  "sources": [
+    "MUSIC映射到媒体策略 L16–21：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/infra/config/file/audio_usage_strategy.xml#L16",
+    "默认媒体Router顺序 L16–22：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/infra/config/file/audio_strategy_router.xml#L16",
+    "第一个有效Router短路返回 L43–60：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/router/audio_router_center.cpp#L43",
+    "用户选择Router结果 L28–56：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/router/user_select_router.cpp#L28",
+    "媒体privacy选择 L27–38：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/router/privacy_priority_router.cpp#L27",
+    "过滤后的最新候选选择 L72–101：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/router/router_base.h#L72",
+    "有线及USB候选隐私类别 L19–23：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/infra/config/file/audio_device_privacy.xml#L19",
+    "Default先查媒体上下文 L26–36：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/router/default_router.cpp#L26",
+    "非零zone提前返回分支 L384–405：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/router/audio_router_center.cpp#L384"
+  ],
+  "question": "UserSelect已返回有效扬声器，晚连接的耳机会自动覆盖它吗？",
+  "answer": "本默认链不会。有效结果短路返回；只有进入Privacy后才谈合格候选中的连接时间排序。非零zone还有提前返回分支。",
+  "condition": "限定zone0默认配置；非零zone可提前返回；产品XML可覆盖；Default先查上下文，不总是写死扬声器",
+  "minutes": 4,
+  "chapter": "故事三 · 策略选择真实分支",
+  "prev": "节点与控制最终服务于场景；先确认系统究竟选择了哪个目标。",
+  "next": "选中耳机以后，device变了，pipe和sink也一定变吗？",
+  "cue": "",
+  "sourceKeys": [
+    "usage",
+    "xml",
+    "router",
+    "userrouter",
+    "private",
+    "privacy",
+    "privacyxml",
+    "defaultrouter",
+    "zone"
+  ],
+  "version": "three-stories"
+}

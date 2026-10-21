@@ -1,0 +1,31 @@
+过滤后的最新候选选择 L72–101：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/router/router_base.h#L72
+72:     std::shared_ptr<AudioDeviceDescriptor> GetLatestNonExcludedConnectDevice(AudioDeviceUsage audioDevUsage,
+73:         std::vector<std::shared_ptr<AudioDeviceDescriptor>> &descs, StreamUsage streamUsage = STREAM_USAGE_UNKNOWN)
+74:     {
+75:         std::vector<std::shared_ptr<AudioDeviceDescriptor>> filteredDescs;
+76:         // remove abnormal device or excluded device
+77:         for (const auto &desc : descs) {
+78:             CHECK_AND_CONTINUE(desc != nullptr &&
+79:                 !AudioRouterSelectStrategy::GetInstance().IsDeviceTypeSkipped(desc->deviceType_));
+80:             if (desc->exceptionFlag_ || !desc->isEnable_ ||
+81:                 (desc->deviceType_ == DEVICE_TYPE_BLUETOOTH_SCO &&
+82:                     (desc->connectState_ == SUSPEND_CONNECTED ||
+83:                         AudioRouterSelectStrategy::GetInstance().GetScoExcluded())) ||
+84:                 AudioRouterSelectStrategy::GetInstance().IsDeviceExcluded(desc, audioDevUsage) ||
+85:                 !IsDeviceUsageSupported(audioDevUsage, desc) ||
+86:                 IsNeedSilentControl(desc, streamUsage)) {
+87:                 continue;
+88:             }
+89:             CHECK_AND_CONTINUE(!ExistSameRemoteCarWithA2DP(desc));
+90:             CHECK_AND_CONTINUE(!CheckDpStreamUsage(desc, streamUsage));
+91:             filteredDescs.push_back(desc);
+92:         }
+93:         if (filteredDescs.size() > 0) {
+94:             auto compare = [&] (std::shared_ptr<AudioDeviceDescriptor> &desc1,
+95:                 std::shared_ptr<AudioDeviceDescriptor> &desc2) {
+96:                 return desc1->connectTimeStamp_ < desc2->connectTimeStamp_;
+97:             };
+98:             sort(filteredDescs.begin(), filteredDescs.end(), compare);
+99:             return std::move(filteredDescs.back());
+100:         }
+101:         return std::make_shared<AudioDeviceDescriptor>();

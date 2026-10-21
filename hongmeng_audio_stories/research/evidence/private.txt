@@ -1,0 +1,13 @@
+媒体privacy选择 L27–38：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/router/privacy_priority_router.cpp#L27
+27: shared_ptr<AudioDeviceDescriptor> PrivacyPriorityRouter::GetMediaRenderDevice(StreamUsage streamUsage,
+28:     int32_t clientUID, const uint32_t sessionID)
+29: {
+30:     vector<shared_ptr<AudioDeviceDescriptor>> descs =
+31:         AudioDeviceManager::GetAudioDeviceManager().GetMediaRenderPrivacyDevices();
+32:     AppendActiveScoDevice(descs);
+33:     RouterBase::ClearConflictDevice(descs, GetRouterType());
+34:     shared_ptr<AudioDeviceDescriptor> desc = GetLatestNonExcludedConnectDevice(MEDIA_OUTPUT_DEVICES, descs);
+35:     AUDIO_DEBUG_LOG("streamUsage %{public}d clientUID %{public}d fetch device %{public}d", streamUsage,
+36:         clientUID, desc->deviceType_);
+37:     return desc;
+38: }

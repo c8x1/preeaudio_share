@@ -1,0 +1,19 @@
+第一个有效Router短路返回 L43–60：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/router/audio_router_center.cpp#L43
+43: shared_ptr<AudioDeviceDescriptor> AudioRouterCenter::FetchMediaRenderDevice(
+44:     StreamUsage streamUsage, int32_t clientUID, RouterType &routerType, const std::set<RouterType> &bypassTypeSet,
+45:     const uint32_t streamId)
+46: {
+47:     for (auto &router : mediaRenderRouters_) {
+48:         RouterType usedType = router->GetRouterType();
+49:         if (bypassTypeSet.count(usedType)) {
+50:             AUDIO_INFO_LOG("bypass %{public}d", usedType);
+51:             continue;
+52:         }
+53:         shared_ptr<AudioDeviceDescriptor> desc = router->GetMediaRenderDevice(streamUsage, clientUID, streamId);
+54:         if ((desc != nullptr) && (desc->deviceType_ != DEVICE_TYPE_NONE)) {
+55:             routerType = usedType;
+56:             return desc;
+57:         }
+58:     }
+59:     return make_shared<AudioDeviceDescriptor>();
+60: }

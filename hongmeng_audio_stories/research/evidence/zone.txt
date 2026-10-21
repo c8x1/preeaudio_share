@@ -1,0 +1,23 @@
+非零zone提前返回分支 L384–405：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/router/audio_router_center.cpp#L384
+384: std::vector<std::shared_ptr<AudioDeviceDescriptor>> AudioRouterCenter::PreFetchOutputDevices(
+385:     const FetchDeviceInfo &info)
+386: {
+387:     int32_t zoneId = AudioZoneService::GetInstance().FindAudioZone(info.clientUID, info.streamUsage, OUTPUT_DEVICE,
+388:         info.streamId);
+389:     if (zoneId != 0) {
+390:         vector<shared_ptr<AudioDeviceDescriptor>> zoneDescs =
+391:             AudioZoneService::GetInstance().FetchOutputDevices(zoneId, info.streamUsage,
+392:                 info.clientUID, ROUTER_TYPE_NONE);
+393:         if (zoneDescs.size() != 0) {
+394:             return zoneDescs;
+395:         }
+396:     }
+397:     if (info.streamUsage == STREAM_USAGE_ULTRASONIC &&
+398:         AudioStreamCollector::GetAudioStreamCollector().GetRunningStreamUsageNoUltrasonic() == STREAM_USAGE_INVALID) {
+399:         AUDIO_INFO_LOG("Stream ULTRASONIC always choose spk");
+400:         vector<shared_ptr<AudioDeviceDescriptor>> descs;
+401:         descs.push_back(AudioDeviceManager::GetAudioDeviceManager().GetRenderDefaultDevice());
+402:         return descs;
+403:     }
+404:     return {};
+405: }

@@ -1,0 +1,12 @@
+Default先查媒体上下文 L26–36：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/router/default_router.cpp#L26
+26: shared_ptr<AudioDeviceDescriptor> DefaultRouter::GetMediaRenderDevice(StreamUsage streamUsage, int32_t clientUID,
+27:     const uint32_t sessionID)
+28: {
+29:     auto desc = AudioRouterSelectStrategy::GetInstance().GetMediaDefaultOutputDevice(clientUID, sessionID);
+30:     if (desc == nullptr) {
+31:         desc = AudioDeviceManager::GetAudioDeviceManager().GetRenderDefaultDevice();
+32:     }
+33:     AUDIO_DEBUG_LOG("streamUsage %{public}d clientUID %{public}d fetch device %{public}d", streamUsage, clientUID,
+34:         desc->deviceType_);
+35:     return desc;
+36: }

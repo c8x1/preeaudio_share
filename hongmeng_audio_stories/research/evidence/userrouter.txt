@@ -1,0 +1,30 @@
+用户选择Router结果 L28–56：https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_policy/server/domain/router/user_select_router.cpp#L28
+28: shared_ptr<AudioDeviceDescriptor> UserSelectRouter::GetMediaRenderDevice(StreamUsage streamUsage, int32_t clientUID,
+29:     const uint32_t sessionID)
+30: {
+31:     if (streamUsage == STREAM_USAGE_RINGTONE || streamUsage == STREAM_USAGE_VOICE_RINGTONE ||
+32:         streamUsage == STREAM_USAGE_VOICE_TRANSFER_RINGTONE) {
+33:         AUDIO_INFO_LOG("Ringtone skip user select");
+34:         return make_shared<AudioDeviceDescriptor>();
+35:     }
+36:     shared_ptr<AudioDeviceDescriptor> perDev_ =
+37:         AudioRouterSelectStrategy::GetInstance().GetMediaOutputDevice(clientUID, sessionID);
+38:     CHECK_AND_RETURN_RET_LOG(perDev_ != nullptr, make_shared<AudioDeviceDescriptor>(), "perDev is null");
+39:     bool ret = CheckStreamUsage(perDev_, streamUsage);
+40:     CHECK_AND_RETURN_RET(ret, make_shared<AudioDeviceDescriptor>());
+41:     ret = CheckDpStreamUsage(perDev_, streamUsage);
+42:     CHECK_AND_RETURN_RET(!ret, make_shared<AudioDeviceDescriptor>());
+43:     vector<shared_ptr<AudioDeviceDescriptor>> mediaDevices =
+44:         AudioDeviceManager::GetAudioDeviceManager().GetConnectedDevices();
+45:     RouterBase::ClearConflictDevice(mediaDevices, GetRouterType());
+46:     RouterBase::ReplaceConflictA2dpWithSco(perDev_, GetRouterType());
+47:     if (perDev_->deviceId_ == 0 || !RouterBase::IsDeviceUsageSupported(MEDIA_OUTPUT_DEVICES, perDev_)) {
+48:         AUDIO_DEBUG_LOG(" PreferredMediaRenderDevice is null or device is not available now");
+49:         return make_shared<AudioDeviceDescriptor>();
+50:     } else {
+51:         int32_t audioId = perDev_->deviceId_;
+52:         AUDIO_INFO_LOG(" PreferredMediaRenderDevice audioId is %{public}d", audioId);
+53:         return RouterBase::GetPairDevice(perDev_, mediaDevices, MEDIA_OUTPUT_DEVICES);
+54:     }
+55: }
+56: 
