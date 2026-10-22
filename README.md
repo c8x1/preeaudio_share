@@ -25,3 +25,11 @@
 ![P01–P07](hongmeng_audio_design_review/previews/contact-1.jpg)
 ![P08–P14](hongmeng_audio_design_review/previews/contact-2.jpg)
 ![P15–P21](hongmeng_audio_design_review/previews/contact-3.jpg)
+
+## HPAE 设计模式补充分享
+
+- [图解 PPT，含完整讲稿备注](hpae_design_patterns/HPAE_设计模式_图解版_含完整讲稿.pptx)
+- [逐页口述讲稿](hpae_design_patterns/HPAE_图解版_分享讲稿.md)
+- [内容与源码版本说明](hpae_design_patterns/README.md)
+
+6 页类图、创建流程与时序图，适合在介绍 Manager、Node、Cluster 之后补充讲解。
