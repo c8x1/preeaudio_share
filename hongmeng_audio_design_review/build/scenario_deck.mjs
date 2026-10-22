@@ -3,7 +3,7 @@ import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {execFileSync} from 'node:child_process';
 import {Presentation,PresentationFile} from '@oai/artifact-tool';
-const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../audio_scenario');
+const ROOT=process.env.SCENARIO_ROOT?path.resolve(process.env.SCENARIO_ROOT):path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../audio_scenario');
 const SKILL=process.env.PRESENTATIONS_SKILL_DIR||'C:/Users/47156/.codex/plugins/cache/openai-primary-runtime/presentations/26.1020.11127/skills/presentations';
 const PY=process.env.PRESENTATIONS_PYTHON||'C:/Users/47156/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe';
 process.env.RUNTIME_NODE_MODULES=process.env.RUNTIME_NODE_MODULES||'C:/Users/47156/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules';
@@ -44,7 +44,7 @@ if(selected===null){
  const {finalizePresentation}=await import(pathToFileURL(path.join(SKILL,'container_tools/artifact_tool_utils.mjs')).href);
  let finalPath=path.join(ROOT,'build/.private','场景修订_'+Date.now()+'.pptx');
  const r=await finalizePresentation({workspaceDir:path.dirname(ROOT),candidatePath:animated,finalPath,pythonExecutable:PY,integrityValidatorPath:path.join(SKILL,'container_tools/inspect_presentation_package_integrity.py'),layoutValidatorPath:path.join(SKILL,'container_tools/inspect_presentation_layout_geometry.py'),layoutArgs:['--expected-slide-size-emu','12192000,6858000','--validate-heading-fit'],explicitTotalSlideCount:pages.length,requiredNativeTableOwnerSlides:[],requiredNativeChartOwnerSlides:[],fontPolicy:{basis:'design',families:['Microsoft YaHei']},verifyArtifactToolImport:true,receiptPath:path.join(ROOT,'..','.codex-finalizer','scenario-'+Date.now()+'.json')});
- const delivered=path.join(ROOT,'一首歌三个操作_场景演示稿.pptx');
+ const delivered=path.join(ROOT,process.env.SCENARIO_FILE||'一首歌三个操作_场景演示稿.pptx');
  await fs.copyFile(finalPath,delivered);
  await fs.writeFile(path.join(ROOT,'build/final.json'),JSON.stringify({file:path.basename(delivered),sha256:r.finalSha256},null,2));console.log('Finalized '+delivered);
 }

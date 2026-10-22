@@ -1,0 +1,167 @@
+{
+  "n": 2,
+  "title": "改动半径：加限幅，接新设备",
+  "titleSize": 42,
+  "takeaway": "",
+  "section": "",
+  "elements": [
+    [
+      "text",
+      64,
+      136,
+      1140,
+      42,
+      "两类常见改动，各自要碰多大面积。",
+      27,
+      "gray",
+      false,
+      "left"
+    ],
+    [
+      "reveal",
+      1
+    ],
+    [
+      "text",
+      64,
+      198,
+      300,
+      35,
+      "给所有通路加限幅",
+      25,
+      "navy",
+      true,
+      "left"
+    ],
+    [
+      "node",
+      64,
+      246,
+      540,
+      62,
+      "PA：限幅器长在 sink 文件里",
+      "gray",
+      22
+    ],
+    [
+      "text",
+      64,
+      318,
+      540,
+      28,
+      "加一个效果，动的是那个 4823 行的文件",
+      19,
+      "gray",
+      false,
+      "left"
+    ],
+    [
+      "node",
+      656,
+      246,
+      540,
+      62,
+      "HPAE：挂一个限幅节点进链",
+      "teal",
+      22
+    ],
+    [
+      "text",
+      656,
+      318,
+      540,
+      28,
+      "独立文件、独立单测，不碰别的节点",
+      19,
+      "gray",
+      false,
+      "left"
+    ],
+    [
+      "reveal",
+      2
+    ],
+    [
+      "text",
+      64,
+      406,
+      300,
+      35,
+      "接一种新输出设备",
+      25,
+      "navy",
+      true,
+      "left"
+    ],
+    [
+      "node",
+      64,
+      454,
+      540,
+      62,
+      "PA：动 sink 的设备分支与格式转换",
+      "gray",
+      21
+    ],
+    [
+      "text",
+      64,
+      526,
+      540,
+      28,
+      "设备差异写进模块代码",
+      19,
+      "gray",
+      false,
+      "left"
+    ],
+    [
+      "node",
+      656,
+      454,
+      540,
+      62,
+      "HPAE：节点信息按目标侧填参数",
+      "teal",
+      21
+    ],
+    [
+      "text",
+      656,
+      526,
+      540,
+      28,
+      "帧长采样率来自目标，节点不改",
+      19,
+      "gray",
+      false,
+      "left"
+    ],
+    [
+      "text",
+      64,
+      614,
+      1140,
+      40,
+      "PA 把流类型与设备差异写成代码分叉；HPAE 把它们变成挂链时的参数。",
+      26,
+      "navy",
+      true,
+      "left"
+    ]
+  ],
+  "footer": "情景为结构对照；具体行号见讲稿附录。",
+  "minutes": 2,
+  "objective": "改动半径：加限幅，接新设备",
+  "script": "再看两类最常见的改动，各要碰多大面积。\n\n第一件：给所有通路加限幅。老方案里，限幅器就长在 sink 模块里，加它、改它，动的都是那个四千八百行的文件。HPAE 里它是一个独立的限幅节点，挂进链就行，带着自己的单测。\n\n第二件：接一种新的输出设备。老方案要动 sink 模块里的设备分支和格式转换。HPAE 里节点不关心具体设备：设备信息、帧长、采样率，都是挂到目标侧时填进节点信息的参数。\n\n一个数字收尾：HPAE 的节点层是三十多个文件，每个文件一个职责，最大的一个一千一百行；每个节点有自己的单测，三十多个测试文件。改限幅不用读格式转换，改增益不用碰设备。\n\n所以这一部分的论点先立在这：老方案把流类型和设备差异织进代码分叉，每加一种就全文再分叉一次；HPAE 把它们变成挂链时的参数，每个保证只写一遍。接下来看执行组织——线程和队列——两边又是怎么安排的。",
+  "next": "",
+  "boundary": "情景为结构对照，未覆盖全部改动类型；老方案的支持面与生态成熟度是另一组维度，不在本页比较。",
+  "cue": "初始只显示引子；第一次点击展开“加限幅”情景；第二次点击展开“接新设备”情景与底部对照句。",
+  "pacing": "先看初始图，再按鼠标逐步揭示。每次点击后沿编号指图解释。",
+  "sources": [
+    "https://gitcode.com/openharmony/multimedia_audio_framework/blob/OpenHarmony-v5.1.0-Release/frameworks/native/pulseaudio/modules/hdi/hdi_sink.c#L2376",
+    "https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/node/src/hpae_limiter_node.cpp",
+    "https://gitcode.com/openharmony/multimedia_audio_framework/blob/0d073de5a30f33ab6716d9abd481d76eca843741/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L114"
+  ],
+  "from": "承接《一首歌，三个操作》结尾的提问：换一个引擎会怎样"
+}

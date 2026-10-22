@@ -56,5 +56,5 @@ with ZipFile(src) as zin, ZipFile(dst,'w',ZIP_DEFLATED) as zout:
         if re.fullmatch(r'ppt/slides/slide\d+\.xml',item.filename):
             data,count=patch(data);counts.append(count)
         zout.writestr(item,data)
-assert len(counts)==11 and all(n in (1,2) for n in counts),counts
+assert counts and all(n in (1,2) for n in counts),counts
 print('Native reveal steps per slide:',counts)

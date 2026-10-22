@@ -23,6 +23,8 @@ PPTX 含原生点击出现效果，每页 1–2 次点击。HTML 预览也支持
 
 沿用仓库现有的 `@oai/artifact-tool` 构建环境，字体为 Microsoft YaHei。运行时路径见 `hongmeng_audio_design_review/build/README.md`，新环境需调整本机绝对路径并配置模块依赖。非 Windows 环境可用 `PRESENTATIONS_PYTHON`、`RUNTIME_NODE_MODULES`、`PRESENTATIONS_SKILL_DIR` 三个环境变量覆盖本机 python 可执行、node 模块目录与 presentations 技能目录（默认值仍为原 Windows 路径）；校验回执目录 `.codex-finalizer/` 需事先存在。
 
+构建链支持多套 deck：`SCENARIO_ROOT` 指定页面目录（默认本目录）、`SCENARIO_FILE` 指定交付文件名、`SCENARIO_TITLE` 指定网页预览标题（scenario_package 的页数与每页点击步数从页面 JSON 的 reveal 分组动态推导）。另一套 deck 见 `audio_pa_compare/`。
+
 在仓库根目录运行：
 
 ```powershell
