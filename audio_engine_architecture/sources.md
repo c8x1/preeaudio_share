@@ -6,6 +6,8 @@
 
 - [Linux 内核音频子系统](https://www.kernel.org/doc/html/latest/sound/index.html)
 - [ALSA 配置与 OSS 兼容](https://docs.kernel.org/sound/alsa-configuration.html)
+- [ALSA PCM：采样帧、样本与缓冲](https://www.alsa-project.org/alsa-doc/alsa-lib/pcm.html)
+- [ALSA 官方库](https://github.com/alsa-project/alsa-lib)
 - [PulseAudio 更名后的发布说明（2006）](https://0pointer.de/blog/projects/pulse-release.html)
 - [PipeWire 项目发布介绍（2017）](https://blogs.gnome.org/uraeus/2017/09/19/launching-pipewire/)
 - [PipeWire 发布历史](https://github.com/PipeWire/pipewire/blob/master/NEWS)

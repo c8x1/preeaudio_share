@@ -4,6 +4,8 @@ import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {Presentation,PresentationFile} from '@oai/artifact-tool';
 const root=path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+const narration=JSON.parse(await fs.readFile(path.join(root,'narration.json'),'utf8'));
+if(narration.length!==15) throw new Error('Expected 15 narration entries');
 const P=Presentation.create({slideSize:{width:1280,height:720}});
 const C={bg:'#F6F8FB',ink:'#10243A',muted:'#617389',blue:'#3478F6',teal:'#10A5A1',purple:'#87789A',line:'#CCD7E3',pale:'#E7EFFD',white:'#FFFFFF',hw:'#46515E'};
 const FONT='Hiragino Sans GB';
@@ -36,7 +38,7 @@ function rect(x,y,w,h,fill,line='none'){return S.shapes.add({geometry:'rect',pos
 function line(x,y,x2,y2,color=C.line,dash=false){return S.shapes.add({geometry:'line',position:{left:Math.min(x,x2),top:Math.min(y,y2),width:Math.abs(x2-x)||.01,height:Math.abs(y2-y)||.01,horizontalFlip:x2<x,verticalFlip:y2<y},fill:'none',line:{fill:color,width:2,style:dash?'dash':'solid'}})}
 function arrow(x,y,x2,y2,color=C.blue,dash=false){line(x,y,x2,y2,color,dash);if(y===y2){line(x2-7,y2-5,x2,y2,color);line(x2-7,y2+5,x2,y2,color)}else{line(x2-5,y2-7,x2,y2,color);line(x2+5,y2-7,x2,y2,color)}}
 function node(t,x,y,w,h=68,color=C.blue,size=26){rect(x,y,w,h,color);text(t,x+10,y+4,w-20,h-8,size,C.white,true,'center')}
-function base(n,title,sub,footer,note,urls){S=P.slides.add();S.background.fill=C.bg;text(title,64,42,1152,64,44,C.ink,true);text(sub,64,121,1152,48,27,C.muted);line(64,190,1216,190);text(footer,64,655,1120,34,17,C.muted);text(String(n).padStart(2,'0'),1202,660,36,28,18,C.muted);const full=note+'\n\n资料来源（查阅日期 2026-10-22）\n'+urls.join('\n');S.speakerNotes.text=full;notes.push({n,title,note:full});}
+function base(n,title,sub,footer,note,urls){S=P.slides.add();S.background.fill=C.bg;text(title,64,42,1152,64,44,C.ink,true);text(sub,64,121,1152,48,27,C.muted);line(64,190,1216,190);text(footer,64,655,1120,34,17,C.muted);text(String(n).padStart(2,'0'),1202,660,36,28,18,C.muted);const entry=narration.find(x=>x.slide===n);if(!entry || entry.title!==title)throw new Error('Narration mismatch: '+n);const full=entry.script+'\n\n资料来源（查阅日期 2026-10-22）\n'+urls.join('\n');S.speakerNotes.text=full;notes.push({n,title,note:full});}
 function table(values,x,y,width,height,widths,size=24){
  const t=S.tables.add({rows:values.length,columns:values[0].length,left:x,top:y,width,height,columnWidths:widths,values});
  t.borders.assign({fill:C.line,width:1,style:'solid'});

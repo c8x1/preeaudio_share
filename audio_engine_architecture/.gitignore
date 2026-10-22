@@ -2,4 +2,4 @@ build/candidate.pptx
 build/*.validation.json
 build/font-policy.json
 *.inspect.ndjson
-node_modules/
+node_modules
