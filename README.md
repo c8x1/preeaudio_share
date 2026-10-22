@@ -25,3 +25,8 @@
 ![P01–P07](hongmeng_audio_design_review/previews/contact-1.jpg)
 ![P08–P14](hongmeng_audio_design_review/previews/contact-2.jpg)
 ![P15–P21](hongmeng_audio_design_review/previews/contact-3.jpg)
+
+## 音频引擎架构补充稿（2026-10-22）
+
+- [15 页独立补充 PPT、讲稿、来源及预览](audio_engine_architecture/)
+- 覆盖演进时间线，PulseAudio / JACK / PipeWire 与 PreeAudio 的设计和架构对比，以及 JACK、PipeWire 技术附录。
