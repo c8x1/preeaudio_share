@@ -30,3 +30,7 @@
 
 - [15 页独立补充 PPT、讲稿、来源及预览](audio_engine_architecture/)
 - 覆盖演进时间线，PulseAudio / JACK / PipeWire 与 PreeAudio 的设计和架构对比，以及 JACK、PipeWire 技术附录。
+
+## PreeAudio 引擎总结页（2026-10-22）
+
+- [独立总结页 PPT、口语讲稿与预览](preeaudio_summary/)
