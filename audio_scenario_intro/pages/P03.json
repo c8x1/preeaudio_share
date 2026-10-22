@@ -1,0 +1,193 @@
+{
+  "n": 3,
+  "title": "切到耳机，为什么不只是换个出口？",
+  "titleSize": 42,
+  "takeaway": "",
+  "section": "",
+  "elements": [
+    [
+      "text",
+      64,
+      143,
+      1140,
+      43,
+      "同一路音乐，从扬声器切到耳机。",
+      28,
+      "gray",
+      false,
+      "left"
+    ],
+    [
+      "text",
+      64,
+      220,
+      480,
+      34,
+      "底层要做的事",
+      24,
+      "blue",
+      true,
+      "left"
+    ],
+    [
+      "text",
+      665,
+      220,
+      540,
+      34,
+      "为什么需要它",
+      24,
+      "teal",
+      true,
+      "left"
+    ],
+    [
+      "line",
+      64,
+      272,
+      1214,
+      272,
+      "light",
+      2
+    ],
+    [
+      "reveal",
+      1
+    ],
+    [
+      "text",
+      64,
+      296,
+      555,
+      42,
+      "确定目标设备",
+      28,
+      "navy",
+      true,
+      "left"
+    ],
+    [
+      "text",
+      665,
+      296,
+      540,
+      42,
+      "声音要送到选定的耳机",
+      27,
+      "gray",
+      false,
+      "left"
+    ],
+    [
+      "text",
+      64,
+      365,
+      555,
+      42,
+      "交接正在播放的这一路音乐",
+      28,
+      "navy",
+      true,
+      "left"
+    ],
+    [
+      "text",
+      665,
+      365,
+      540,
+      42,
+      "延续当前播放",
+      27,
+      "gray",
+      false,
+      "left"
+    ],
+    [
+      "reveal",
+      2
+    ],
+    [
+      "text",
+      64,
+      434,
+      555,
+      42,
+      "适配目标设备的数据要求",
+      28,
+      "navy",
+      true,
+      "left"
+    ],
+    [
+      "text",
+      665,
+      434,
+      540,
+      42,
+      "每轮需要的数据量可能不同",
+      27,
+      "gray",
+      false,
+      "left"
+    ],
+    [
+      "text",
+      64,
+      503,
+      555,
+      42,
+      "准备新处理链，完成旧链收尾",
+      28,
+      "navy",
+      true,
+      "left"
+    ],
+    [
+      "text",
+      665,
+      503,
+      540,
+      42,
+      "让声音能从目标设备输出",
+      27,
+      "gray",
+      false,
+      "left"
+    ],
+    [
+      "line",
+      64,
+      568,
+      1214,
+      568,
+      "light",
+      2
+    ],
+    [
+      "text",
+      64,
+      590,
+      1140,
+      48,
+      "这些衔接，都是为了让切换尽量连续、少些突变。",
+      30,
+      "teal",
+      true,
+      "left"
+    ]
+  ],
+  "footer": "策略侧选择设备，引擎执行迁移。具体衔接方式取决于设备与路径。",
+  "minutes": 1.6,
+  "objective": "切到耳机，为什么不只是换个出口？",
+  "script": "音乐还在播放，我们把声音切到耳机。听起来只是换个出口，底层却需要把正在工作的播放路径衔接起来。\n\n首先，系统要确定这次该用哪个设备。设备由策略侧选择，引擎再把这一路播放交给目标设备。这里延续的是原来的播放，不能因为换了设备就把它当作一首新歌重新开始。\n\n接着，还要适配目标设备的要求。比如，目标侧的采样率和每轮处理的数据量可能不同。连接换过去了，数据处理的方式也要跟上。\n\n此外，耳机侧的处理链需要准备好，旧设备侧也需要收尾。什么时候接入，还要看当前是否在播放、目标是否允许连接。\n\n这些事情共同影响切换时的声音。我们希望音乐尽量连续、少一些突变，但做完连接并不等于听感一定无缝，还要看设备和具体路径。",
+  "next": "还有一个要求：需要继续播放的时候，设备不能一直等控制操作处理完。",
+  "boundary": "MoveStreamSync 保留同一个输入节点并交接；目标侧 AddSingleNodeToSink 更新设备信息，按目标采样率与帧长调整处理粒度，再按 isConnect 和 RUNNING 状态连接。管理层映射更新不构成设备侧全部完成的同步栅栏。“继续播放”是会话延续的说明，不保证零间隙、不丢失任何样本或任意路径无缝。",
+  "cue": "初始：展示音乐从扬声器切到耳机的场景，以及“要做的事／为什么要做”。第一次点击：揭示目标选择、同一路播放交接。第二次点击：揭示参数适配、处理链衔接及体验目标。",
+  "pacing": "按演示提示分段讲述。备讲说明供答疑使用。",
+  "sources": [
+    "https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L872",
+    "https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L114",
+    "https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_manager.cpp#L1181"
+  ],
+  "from": "再看切到耳机。这一次，连输出设备都换了，需要顾及的事情更多。"
+}

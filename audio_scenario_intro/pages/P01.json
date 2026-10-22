@@ -1,0 +1,172 @@
+{
+  "n": 1,
+  "title": "我们只做了三个动作",
+  "titleSize": 42,
+  "takeaway": "",
+  "section": "",
+  "elements": [
+    [
+      "text",
+      64,
+      148,
+      1120,
+      44,
+      "手机正在放歌。我们暂停一下，继续播放，再切到耳机。",
+      28,
+      "gray",
+      false,
+      "left"
+    ],
+    [
+      "text",
+      64,
+      254,
+      260,
+      38,
+      "01",
+      25,
+      "blue",
+      false,
+      "left"
+    ],
+    [
+      "text",
+      64,
+      308,
+      330,
+      62,
+      "暂停",
+      42,
+      "navy",
+      true,
+      "left"
+    ],
+    [
+      "text",
+      460,
+      254,
+      260,
+      38,
+      "02",
+      25,
+      "blue",
+      false,
+      "left"
+    ],
+    [
+      "text",
+      460,
+      308,
+      330,
+      62,
+      "继续播放",
+      42,
+      "navy",
+      true,
+      "left"
+    ],
+    [
+      "text",
+      856,
+      254,
+      260,
+      38,
+      "03",
+      25,
+      "blue",
+      false,
+      "left"
+    ],
+    [
+      "text",
+      856,
+      308,
+      330,
+      62,
+      "切到耳机",
+      42,
+      "navy",
+      true,
+      "left"
+    ],
+    [
+      "line",
+      64,
+      402,
+      1214,
+      402,
+      "light",
+      2
+    ],
+    [
+      "reveal",
+      1
+    ],
+    [
+      "text",
+      64,
+      437,
+      330,
+      48,
+      "停得干净",
+      33,
+      "teal",
+      true,
+      "left"
+    ],
+    [
+      "text",
+      460,
+      437,
+      330,
+      48,
+      "恢复自然",
+      33,
+      "teal",
+      true,
+      "left"
+    ],
+    [
+      "text",
+      856,
+      437,
+      330,
+      48,
+      "音乐接着放",
+      33,
+      "teal",
+      true,
+      "left"
+    ],
+    [
+      "reveal",
+      2
+    ],
+    [
+      "text",
+      64,
+      569,
+      1140,
+      65,
+      "按钮上没写的要求，底层都要考虑。",
+      36,
+      "navy",
+      true,
+      "left"
+    ]
+  ],
+  "footer": "这里先看用户期待，再看引擎需要处理的问题。",
+  "minutes": 1,
+  "objective": "我们只做了三个动作",
+  "script": "手机正在放歌。我们点一下暂停，再继续播放，然后把声音切到耳机。整个过程只有几个动作，我们通常不会觉得这有什么难的。\n\n但我们对结果其实很挑剔：暂停时，不能突然“啪”一下；恢复时，声音不能猛地冲出来；切到耳机以后，音乐还得接着放。\n\n这些要求都没有写在按钮上，却都需要底层替我们考虑。我们就从最简单的暂停开始，看看里面藏着哪些事情。",
+  "next": "按了暂停，为什么不能立刻把数据通路断掉？",
+  "boundary": "三项是体验目标，不是对每条设备路径的效果承诺。后续示例来自普通 HPAE 播放路径，波形与连线均为教学示意。",
+  "cue": "初始：依次指向暂停、继续播放、切到耳机。第一次点击：揭示每个动作背后的体验期待。第二次点击：提出底层需要考虑什么。",
+  "pacing": "按演示提示分段讲述。备讲说明供答疑使用。",
+  "sources": [
+    "https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L919",
+    "https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L1110",
+    "https://gitcode.com/openharmony/multimedia_audio_framework/blob/3a2688e805df970739e3b0cebf9cc05d8cb24e9b/services/audio_engine/manager/src/hpae_renderer_manager.cpp#L872"
+  ],
+  "from": "音乐播放中的三个日常操作"
+}
